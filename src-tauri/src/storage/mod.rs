@@ -1,6 +1,6 @@
-// Storage layer (SQLite via sqlx).
-//
-// Submodules to be added by parallel work streams:
-//   - db:       connection pool, migration runner
-//   - models:   typed structs matching tables
-//   - queries:  high-level query helpers
+pub mod db;
+pub mod models;
+pub mod queries;
+
+pub use db::init;
+pub use models::*;

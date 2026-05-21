@@ -37,6 +37,58 @@
     "add_first_account": "添加你的第一个邮箱账户",
     "email_address": "邮箱地址",
     "next": "下一步",
-    "back": "返回"
+    "back": "返回",
+    "pick_provider": "选择你的邮箱",
+    "oauth_redirect_explainer": "你将被跳转到 {{provider}} 完成授权。",
+    "password_label": "密码",
+    "auth_code_label": "授权码",
+    "app_password_label": "应用专用密码",
+    "username_label": "用户名",
+    "imap_host": "IMAP 服务器",
+    "imap_port": "IMAP 端口",
+    "imap_encryption": "加密方式",
+    "smtp_host": "SMTP 服务器",
+    "smtp_port": "SMTP 端口",
+    "smtp_encryption": "加密方式",
+    "open_settings_page": "打开设置页",
+    "signin_with": "使用 {{provider}} 登录",
+    "testing_connection": "正在测试连接…",
+    "success": "账户添加成功！",
+    "go_to_inbox": "进入收件箱",
+    "encryption": {
+      "tls": "TLS",
+      "starttls": "StartTLS",
+      "none": "无加密"
+    },
+    "providers": {
+      "gmail": "Gmail",
+      "outlook": "Outlook",
+      "icloud": "iCloud",
+      "qq": "QQ 邮箱",
+      "mail163": "163 邮箱",
+      "generic_imap": "自定义 IMAP"
+    },
+    "guide": {
+      "icloud": [
+        "访问 appleid.apple.com 并登录。",
+        "进入"登录与安全"→"App 专用密码"。",
+        "点击"生成 App 专用密码"，名称填写"Retposto"。",
+        "复制生成的密码并粘贴至下方。"
+      ],
+      "qq": [
+        "在浏览器中登录 mail.qq.com。",
+        "进入"设置"→"账户"。",
+        "开启 IMAP/SMTP 服务。",
+        "点击"生成授权码"，按提示完成短信验证。",
+        "复制 16 位授权码并粘贴至下方。"
+      ],
+      "163": [
+        "在浏览器中登录 mail.163.com。",
+        "进入"设置"→"POP3/SMTP/IMAP"。",
+        "开启 IMAP/SMTP 服务。",
+        "点击"获取授权码"并完成验证。",
+        "复制 16 位授权码并粘贴至下方。"
+      ]
+    }
   }
 }

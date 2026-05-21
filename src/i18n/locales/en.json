@@ -37,6 +37,58 @@
     "add_first_account": "Let's add your first email account",
     "email_address": "Email address",
     "next": "Next",
-    "back": "Back"
+    "back": "Back",
+    "pick_provider": "Pick your email provider",
+    "oauth_redirect_explainer": "You'll be redirected to {{provider}} to sign in.",
+    "password_label": "Password",
+    "auth_code_label": "Authorization code",
+    "app_password_label": "App-specific password",
+    "username_label": "Username",
+    "imap_host": "IMAP host",
+    "imap_port": "IMAP port",
+    "imap_encryption": "Encryption",
+    "smtp_host": "SMTP host",
+    "smtp_port": "SMTP port",
+    "smtp_encryption": "Encryption",
+    "open_settings_page": "Open settings page",
+    "signin_with": "Sign in with {{provider}}",
+    "testing_connection": "Testing connection…",
+    "success": "Account added!",
+    "go_to_inbox": "Go to inbox",
+    "encryption": {
+      "tls": "TLS",
+      "starttls": "StartTLS",
+      "none": "None"
+    },
+    "providers": {
+      "gmail": "Gmail",
+      "outlook": "Outlook",
+      "icloud": "iCloud",
+      "qq": "QQ Mail",
+      "mail163": "163 Mail",
+      "generic_imap": "Custom IMAP"
+    },
+    "guide": {
+      "icloud": [
+        "Visit appleid.apple.com and sign in.",
+        "Go to Sign-In and Security → App-Specific Passwords.",
+        "Click Generate an App-Specific Password and name it "Retposto".",
+        "Copy the generated password and paste it below."
+      ],
+      "qq": [
+        "Log in to mail.qq.com in your browser.",
+        "Go to Settings → Account.",
+        "Enable IMAP/SMTP service.",
+        "Click Generate Authorization Code and follow the SMS verification.",
+        "Copy the 16-character code and paste it below."
+      ],
+      "163": [
+        "Log in to mail.163.com in your browser.",
+        "Go to Settings → POP3/SMTP/IMAP.",
+        "Enable IMAP/SMTP service.",
+        "Click Get Authorization Code and complete the verification.",
+        "Copy the 16-character code and paste it below."
+      ]
+    }
   }
 }

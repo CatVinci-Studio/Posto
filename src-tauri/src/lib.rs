@@ -1,3 +1,4 @@
+use tauri::Manager;
 use tracing_subscriber::EnvFilter;
 
 mod commands;
@@ -21,9 +22,23 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            let pool = tauri::async_runtime::block_on(crate::storage::init(app.handle()))?;
+            app.manage(pool);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::greet,
             commands::app_version,
+            commands::list_accounts,
+            accounts::commands::detect_provider,
+            accounts::commands::list_providers,
+            accounts::commands::get_provider_config,
+            accounts::commands::test_imap_login,
+            llm::commands::set_openai_api_key,
+            llm::commands::has_openai_api_key,
+            llm::commands::clear_openai_api_key,
+            llm::commands::test_openai_completion,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,8 @@
-// LLM provider abstraction.
-//
-// Submodules to be added by parallel work streams:
-//   - provider: trait LlmProvider { complete, stream, embeddings, tools, translate }
-//   - openai:   OpenAI implementation (API key + ChatGPT OAuth)
-//   - registry: provider switching + token usage tracking
+pub mod provider;
+pub mod openai;
+pub mod openai_oauth;
+pub mod secrets;
+pub mod commands;
+
+pub use provider::*;
+pub use openai::OpenAi;
