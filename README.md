@@ -5,8 +5,8 @@ Agent-based 邮件管理器。Tauri 2 + Rust + React + TypeScript。
 ## 开发
 
 ```bash
-npm install
-npm run tauri dev
+bun install
+bun run tauri dev
 ```
 
 ## 支持的邮箱
