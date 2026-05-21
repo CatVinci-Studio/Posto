@@ -1,20 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { X, Sparkles, Reply, Archive, ListTodo, ChevronDown, ChevronUp } from "lucide-react";
 import { call } from "@/lib/tauri";
 import { useInboxStore } from "@/stores/inboxStore";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { sanitizeHtml } from "@/lib/sanitizeHtml";
 import { Avatar } from "./Avatar";
 import { CategoryChip } from "./CategoryChip";
 import type { InboxItem } from "@/types/email";
-
-// --- Mock suggested tasks ---
-const MOCK_TASKS = [
-  "Review and approve revenue slide",
-  "Add comments to Q3 projections",
-  "Share final deck with the board",
-];
 
 interface MessageDetailProps {
   item: InboxItem;
@@ -22,6 +17,7 @@ interface MessageDetailProps {
 
 export function MessageDetail({ item }: MessageDetailProps) {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const { setSelected } = useInboxStore();
   const { message, enrichment } = item;
 
@@ -29,6 +25,7 @@ export function MessageDetail({ item }: MessageDetailProps) {
   const [translatedBody, setTranslatedBody] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showTranslated, setShowTranslated] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
 
   const toAddrs: string[] = message.to_addrs ? JSON.parse(message.to_addrs) : [];
   const ccAddrs: string[] = message.cc_addrs ? JSON.parse(message.cc_addrs) : [];
@@ -53,6 +50,7 @@ export function MessageDetail({ item }: MessageDetailProps) {
       return;
     }
     setIsTranslating(true);
+    setTranslationError(null);
     try {
       const result = await call<string>("translate_message", {
         message_id: message.id,
@@ -60,36 +58,45 @@ export function MessageDetail({ item }: MessageDetailProps) {
       });
       setTranslatedBody(result);
       setShowTranslated(true);
-    } catch {
-      setTranslatedBody("(translation mocked — backend not connected)");
-      setShowTranslated(true);
+    } catch (err) {
+      setTranslationError(err instanceof Error ? err.message : String(err));
     } finally {
       setIsTranslating(false);
     }
   }
 
   function handleReply() {
-    // TODO: open compose pane with reply pre-filled
-    console.log("reply to", message.id);
+    navigate(`/compose/reply/${message.id}`);
   }
 
-  function handleArchive() {
-    // TODO: call('archive_message', { message_id: message.id })
-    console.log("archive", message.id);
+  async function handleArchive() {
+    try {
+      await call("archive_message", { message_id: message.id });
+    } catch (err) {
+      console.warn("archive_message failed", err);
+    }
     setSelected(null);
   }
 
-  function handleConvertToTask() {
-    // TODO: call('create_task_from_message', { message_id: message.id })
-    console.log("convert to task", message.id);
+  async function handleConvertToTask() {
+    try {
+      await call("create_task_from_message", { message_id: message.id });
+    } catch (err) {
+      console.warn("create_task_from_message failed", err);
+    }
   }
 
-  const bodyContent = showTranslated && translatedBody
-    ? translatedBody
-    : (message.body_text ?? message.snippet ?? "(no body)");
+  const bodyText =
+    showTranslated && translatedBody
+      ? translatedBody
+      : (message.body_text ?? message.snippet ?? "");
 
-  const taskCount = enrichment?.task_count ?? 0;
-  const mockTasks = MOCK_TASKS.slice(0, Math.min(taskCount, MOCK_TASKS.length));
+  const sanitizedHtml = useMemo(() => {
+    if (showTranslated && translatedBody) return null;
+    return message.body_html ? sanitizeHtml(message.body_html) : null;
+  }, [message.body_html, showTranslated, translatedBody]);
+
+  const tasksFromEnrichment = enrichment?.tasks ?? [];
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -178,27 +185,38 @@ export function MessageDetail({ item }: MessageDetailProps) {
 
           {/* Email body */}
           <div className="mt-5">
-            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
-              {bodyContent}
-            </pre>
-            {/* TODO: V2 — render body_html with proper DOMPurify sanitization */}
+            {translationError && (
+              <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {translationError}
+              </div>
+            )}
+            {sanitizedHtml ? (
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed text-foreground"
+                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+              />
+            ) : (
+              <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+                {bodyText || "(no body)"}
+              </pre>
+            )}
           </div>
         </div>
 
-        {/* Suggested tasks side panel */}
-        {mockTasks.length > 0 && (
+        {/* Suggested tasks side panel (from agent enrichment, hidden when none) */}
+        {tasksFromEnrichment.length > 0 && (
           <div className="w-56 shrink-0 border-l border-border bg-muted/20 px-3 py-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
               {t("inbox.detail.suggested_tasks")}
             </p>
             <ul className="space-y-2">
-              {mockTasks.map((task, i) => (
+              {tasksFromEnrichment.map((task, i) => (
                 <li
                   key={i}
                   className="flex items-start gap-2 rounded-md bg-background p-2 text-xs text-foreground border border-border"
                 >
                   <ListTodo className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
-                  {task}
+                  {task.title}
                 </li>
               ))}
             </ul>

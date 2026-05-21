@@ -2,6 +2,13 @@
   "app": {
     "name": "Retposto"
   },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "ok": "OK",
+    "back": "Back"
+  },
   "sidebar": {
     "all_inboxes": "All Inboxes",
     "today": "Today",
@@ -11,13 +18,23 @@
     "accounts": "Accounts",
     "agent_activity": "Agent Activity",
     "settings": "Settings",
-    "add_account": "Add Account"
+    "add_account": "Add Account",
+    "toggle": "Toggle sidebar"
   },
   "inbox": {
     "empty_newsletters": "No newsletters to show.",
     "empty_done": "Nothing done yet.",
     "needs_response": "Needs reply",
     "unknown_sender": "Unknown sender",
+    "no_subject": "(no subject)",
+    "unread": "Unread",
+    "loading": "Loading…",
+    "no_selection": "Select a message to preview it here.",
+    "back_to_list": "Inbox",
+    "error": {
+      "title": "Could not load messages",
+      "subtitle": "Pull to refresh or check that an account is connected."
+    },
     "refresh": "Refresh",
     "search_placeholder": "Search…",
     "filters": {
@@ -42,7 +59,10 @@
       "reply": "Reply",
       "snooze": "Snooze",
       "convert_to_task": "Convert to Task",
-      "open": "Open"
+      "open": "Open",
+      "flag": "Flag",
+      "unflag": "Unflag",
+      "delete": "Delete"
     },
     "detail": {
       "summary": "AI Summary",
@@ -210,6 +230,7 @@
       "always_confirm": "Always confirm",
       "rules": "Learned Rules",
       "add_rule": "Add rule",
+      "no_rules": "No automation rules yet. Rules learned from your behavior will appear here.",
       "undo_keep": "Undo history size"
     }
   },

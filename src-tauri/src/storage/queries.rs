@@ -3,7 +3,9 @@ use std::collections::HashSet;
 use sqlx::SqlitePool;
 
 use crate::error::{AppError, AppResult};
-use super::models::{Account, AgentRun, Folder, Memory, MemoryType, Message, Task, Translation};
+use super::models::{
+    Account, AgentRun, Attachment, Folder, Memory, MemoryType, Message, Task, Translation,
+};
 
 // ---------------------------------------------------------------------------
 // Accounts
@@ -222,6 +224,54 @@ pub async fn list_folders(pool: SqlitePool, account_id: i64) -> AppResult<Vec<Fo
     Ok(rows)
 }
 
+/// Read the stored UIDVALIDITY for a folder.
+pub async fn get_folder_uid_validity(
+    pool: &SqlitePool,
+    folder_id: i64,
+) -> AppResult<Option<i64>> {
+    let row: Option<(Option<i64>,)> = sqlx::query_as(
+        "SELECT uid_validity FROM folders WHERE id = ?1",
+    )
+    .bind(folder_id)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.and_then(|(v,)| v))
+}
+
+/// Persist new UIDVALIDITY / UIDNEXT after a successful SELECT.
+pub async fn update_folder_uid_validity(
+    pool: &SqlitePool,
+    folder_id: i64,
+    uid_validity: i64,
+    uid_next: i64,
+) -> AppResult<()> {
+    sqlx::query(
+        "UPDATE folders
+         SET uid_validity = ?1, uid_next = ?2
+         WHERE id = ?3",
+    )
+    .bind(uid_validity)
+    .bind(uid_next)
+    .bind(folder_id)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Wipe all messages (and FTS / agent_runs cascades) in a folder. Called when
+/// the server reports a UIDVALIDITY change — previously-cached UIDs are no
+/// longer meaningful and must be re-fetched.
+pub async fn delete_messages_in_folder(
+    pool: &SqlitePool,
+    folder_id: i64,
+) -> AppResult<u64> {
+    let result = sqlx::query("DELETE FROM messages WHERE folder_id = ?1")
+        .bind(folder_id)
+        .execute(pool)
+        .await?;
+    Ok(result.rows_affected())
+}
+
 /// Return the set of UIDs already stored for a given `folder_id`.
 pub async fn list_existing_uids(pool: SqlitePool, folder_id: i64) -> AppResult<HashSet<u32>> {
     let rows: Vec<(i64,)> = sqlx::query_as(
@@ -231,6 +281,56 @@ pub async fn list_existing_uids(pool: SqlitePool, folder_id: i64) -> AppResult<H
     .fetch_all(&pool)
     .await?;
     Ok(rows.into_iter().map(|(uid,)| uid as u32).collect())
+}
+
+// ---------------------------------------------------------------------------
+// Attachments
+// ---------------------------------------------------------------------------
+
+pub async fn insert_attachment(pool: &SqlitePool, att: &Attachment) -> AppResult<i64> {
+    let result = sqlx::query(
+        "INSERT INTO attachments
+            (message_id, filename, mime, size, content_id, blob_path, downloaded)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+    )
+    .bind(att.message_id)
+    .bind(&att.filename)
+    .bind(&att.mime)
+    .bind(att.size)
+    .bind(&att.content_id)
+    .bind(&att.blob_path)
+    .bind(att.downloaded.unwrap_or(0))
+    .execute(pool)
+    .await?;
+    Ok(result.last_insert_rowid())
+}
+
+pub async fn list_attachments(
+    pool: &SqlitePool,
+    message_id: i64,
+) -> AppResult<Vec<Attachment>> {
+    let rows = sqlx::query_as::<_, Attachment>(
+        "SELECT id, message_id, filename, mime, size, content_id, blob_path, downloaded
+         FROM attachments
+         WHERE message_id = ?1
+         ORDER BY id ASC",
+    )
+    .bind(message_id)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
+pub async fn get_attachment(pool: &SqlitePool, id: i64) -> AppResult<Attachment> {
+    sqlx::query_as::<_, Attachment>(
+        "SELECT id, message_id, filename, mime, size, content_id, blob_path, downloaded
+         FROM attachments
+         WHERE id = ?1",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("attachment id={id}")))
 }
 
 // ---------------------------------------------------------------------------
@@ -439,7 +539,9 @@ pub async fn insert_task(pool: &SqlitePool, task: &Task) -> AppResult<i64> {
 // Memories — additional helpers
 // ---------------------------------------------------------------------------
 
-/// Load all memories whose scope equals one of the provided values.
+/// Load candidate memories for semantic retrieval: scoped, embedding-present,
+/// ranked by pinned+importance+recency. Always-load pinned ones plus the top
+/// `limit` non-pinned candidates from the requested scopes.
 pub async fn load_memories_by_scopes(
     pool: &SqlitePool,
     scopes: &[String],
@@ -457,12 +559,18 @@ pub async fn load_memories_by_scopes(
         .collect::<Vec<_>>()
         .join(", ");
 
+    // Pre-filter: scope match AND has embedding bytes. Pinned rows sort first
+    // so retrieval guarantees they always survive truncation.
     let sql = format!(
         "SELECT id, type, scope, key, content, embedding, importance, pinned,
                 source_message_id, created_at, last_used_at, use_count
          FROM memories
          WHERE scope IN ({placeholders})
-         ORDER BY importance DESC, last_used_at DESC
+           AND embedding IS NOT NULL
+           AND length(embedding) > 0
+         ORDER BY pinned DESC,
+                  importance DESC,
+                  COALESCE(last_used_at, created_at) DESC
          LIMIT ?{}",
         scopes.len() + 1
     );

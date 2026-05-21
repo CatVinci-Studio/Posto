@@ -61,6 +61,43 @@ pub fn has_tokens(provider: ProviderKind, account_email: &str) -> AppResult<bool
     Ok(load_tokens(provider, account_email)?.is_some())
 }
 
+/// Load tokens and, if the access token is within `buffer_secs` of expiry,
+/// silently refresh + persist new tokens. Returns a usable `OAuthTokens`.
+///
+/// Used by the IMAP XOAUTH2 path so background syncs do not stall when the
+/// 1-hour access token expires.
+pub async fn get_valid_tokens(
+    flow: &super::flow::OAuthFlow,
+    provider: ProviderKind,
+    account_email: &str,
+    buffer_secs: i64,
+) -> AppResult<OAuthTokens> {
+    let stored = load_tokens(provider, account_email)?
+        .ok_or_else(|| AppError::Auth(format!("no OAuth tokens for {account_email}")))?;
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+
+    if stored.expires_at - buffer_secs > now {
+        return Ok(stored);
+    }
+
+    let refresh = stored
+        .refresh_token
+        .clone()
+        .ok_or_else(|| AppError::Auth("token expired and no refresh_token present".to_string()))?;
+
+    let mut new_tokens = flow.refresh(provider, refresh).await?;
+    // Refresh responses sometimes omit refresh_token — keep the old one.
+    if new_tokens.refresh_token.is_none() {
+        new_tokens.refresh_token = stored.refresh_token;
+    }
+    save_tokens(provider, account_email, &new_tokens)?;
+    Ok(new_tokens)
+}
+
 // ---------------------------------------------------------------------------
 // In-process pending-state store
 // ---------------------------------------------------------------------------

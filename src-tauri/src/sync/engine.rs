@@ -4,19 +4,23 @@ use std::time::Instant;
 
 use serde::Serialize;
 use sqlx::SqlitePool;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
-use crate::accounts::imap_password::{self, ImapCredentials};
-use crate::accounts::provider::{Encryption, ImapConfig};
+use crate::accounts::imap_password::{self, ImapAuth, ImapCredentials};
+use crate::accounts::oauth::store as oauth_store;
+use crate::accounts::oauth::OAuthFlow;
+use crate::accounts::provider::{Encryption, ImapConfig, ProviderKind as AccProviderKind};
 use crate::accounts::provider_catalog;
 use crate::error::{AppError, AppResult};
-use crate::storage::models::{Account, Folder, FolderKind, Message, ProviderKind};
+use crate::storage::models::{Account, Attachment, Folder, FolderKind, Message, ProviderKind};
 use crate::storage::queries;
 
 pub const MAX_PER_FOLDER: u32 = 50;
-pub const POLL_INTERVAL_SECS: u64 = 60;
+pub const POLL_INTERVAL_SECS: u64 = 300; // 5 min; IDLE handles real-time INBOX
+pub const IDLE_RESTART_BACKOFF_INITIAL_SECS: u64 = 15;
+pub const IDLE_RESTART_BACKOFF_MAX_SECS: u64 = 300;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -48,15 +52,17 @@ pub struct AccountSyncReport {
 pub struct SyncEngine {
     pool: SqlitePool,
     app: AppHandle,
+    oauth: Arc<OAuthFlow>,
     /// Last reported status per account_id.
     statuses: Arc<Mutex<HashMap<i64, SyncStatus>>>,
 }
 
 impl SyncEngine {
-    pub fn new(pool: SqlitePool, app: AppHandle) -> Self {
+    pub fn new(pool: SqlitePool, app: AppHandle, oauth: Arc<OAuthFlow>) -> Self {
         Self {
             pool,
             app,
+            oauth,
             statuses: Arc::new(Mutex::new(HashMap::new())),
         }
     }
@@ -85,25 +91,11 @@ impl SyncEngine {
         // 2. Detect provider and resolve ImapConfig.
         let imap_cfg = resolve_imap_config(&account)?;
 
-        // 3. Load IMAP password from keyring.
-        let password = super::credentials::load_imap_password(&email)?
-            .ok_or_else(|| {
-                // TODO: XOAUTH2 — for OAuth-only providers (Gmail, Outlook) the
-                // password slot will be empty. Implement XOAUTH2 SASL here once
-                // the OAuth token store is wired up.
-                AppError::Auth(format!(
-                    "no IMAP password stored for {email} \
-                     (OAuth / XOAUTH2 not yet implemented)"
-                ))
-            })?;
-
-        let creds = ImapCredentials {
-            username: email.clone(),
-            password,
-        };
+        // 3. Build auth (XOAUTH2 for OAuth providers with tokens, password otherwise).
+        let auth = self.build_auth(&account, &email).await?;
 
         // 4. Fetch folder list and upsert each into `folders` table.
-        let folder_infos = imap_password::fetch_folders(&imap_cfg, &creds).await?;
+        let folder_infos = imap_password::fetch_folders(&imap_cfg, &auth).await?;
 
         let mut folder_names: Vec<String> = Vec::with_capacity(folder_infos.len());
         let mut folder_id_map: HashMap<String, i64> = HashMap::new();
@@ -143,17 +135,50 @@ impl SyncEngine {
                 None => continue,
             };
 
-            // Fetch recent UIDs from server.
-            let server_uids =
-                match imap_password::fetch_recent_uids(&imap_cfg, &creds, &fi.imap_path, MAX_PER_FOLDER)
-                    .await
-                {
-                    Ok(uids) => uids,
-                    Err(e) => {
-                        warn!("fetch_recent_uids failed for {}: {e}", fi.imap_path);
-                        continue;
-                    }
-                };
+            // SELECT folder + capture UIDVALIDITY/UIDNEXT, then UID SEARCH.
+            let state = match imap_password::fetch_folder_state(
+                &imap_cfg,
+                &auth,
+                &fi.imap_path,
+                MAX_PER_FOLDER,
+            )
+            .await
+            {
+                Ok(s) => s,
+                Err(e) => {
+                    warn!("fetch_folder_state failed for {}: {e}", fi.imap_path);
+                    continue;
+                }
+            };
+
+            // UIDVALIDITY check (RFC 3501 §2.3.1.1).
+            // If the server-reported validity differs from what we cached, the
+            // server has re-numbered messages and every UID we hold is stale.
+            let stored_validity = queries::get_folder_uid_validity(&self.pool, folder_id)
+                .await
+                .unwrap_or(None);
+            let server_validity_i64 = state.uid_validity as i64;
+            if let Some(stored) = stored_validity {
+                if stored != server_validity_i64 {
+                    warn!(
+                        folder = %fi.imap_path,
+                        stored,
+                        server = server_validity_i64,
+                        "UIDVALIDITY changed — wiping local cache for folder"
+                    );
+                    let _ = queries::delete_messages_in_folder(&self.pool, folder_id).await;
+                }
+            }
+            // Persist current validity + uid_next.
+            let _ = queries::update_folder_uid_validity(
+                &self.pool,
+                folder_id,
+                server_validity_i64,
+                state.uid_next as i64,
+            )
+            .await;
+
+            let server_uids = state.recent_uids;
 
             // Load UIDs already in the DB for this folder.
             let existing_uids: HashSet<u32> =
@@ -167,7 +192,7 @@ impl SyncEngine {
 
             for uid in new_uids {
                 let parsed =
-                    match imap_password::fetch_message(&imap_cfg, &creds, &fi.imap_path, uid)
+                    match imap_password::fetch_message(&imap_cfg, &auth, &fi.imap_path, uid)
                         .await
                     {
                         Ok(p) => p,
@@ -213,6 +238,17 @@ impl SyncEngine {
 
                 if new_id > 0 {
                     messages_new += 1;
+
+                    // Persist attachments to local cache + insert rows.
+                    if !parsed.attachments.is_empty() {
+                        if let Err(e) =
+                            store_attachments(&self.app, &self.pool, new_id, &parsed.attachments)
+                                .await
+                        {
+                            warn!("store_attachments failed for msg {new_id}: {e}");
+                        }
+                    }
+
                     // Emit email:new event.
                     let _ = self.app.emit(
                         "email:new",
@@ -316,11 +352,9 @@ impl SyncEngine {
         reports
     }
 
-    /// Background polling loop. Spawn via `tokio::spawn(engine.run_polling_loop())`.
-    /// Never panics; errors are logged and the loop continues.
-    ///
-    /// TODO: Replace with IMAP IDLE once the IDLE command is implemented in
-    /// `imap_password.rs`. For now this polls every `POLL_INTERVAL_SECS` seconds.
+    /// Background polling loop. Runs alongside IDLE workers and covers folders
+    /// other than INBOX (sent, archive, etc.) plus serves as a fallback for
+    /// servers that do not honor IDLE.
     pub async fn run_polling_loop(self: Arc<Self>) {
         info!("sync polling loop started (interval={POLL_INTERVAL_SECS}s)");
         loop {
@@ -329,11 +363,191 @@ impl SyncEngine {
             self.sync_all().await;
         }
     }
+
+    /// Spawn one IMAP IDLE worker per active account on INBOX. Each worker
+    /// holds a long-lived connection and triggers `sync_account` whenever the
+    /// server reports EXISTS / RECENT / EXPUNGE. On the 29-minute keepalive
+    /// the IDLE is restarted; on errors there's exponential backoff.
+    pub async fn spawn_idle_workers(self: Arc<Self>) {
+        let accounts = match queries::list_accounts(&self.pool).await {
+            Ok(a) => a,
+            Err(e) => {
+                warn!("spawn_idle_workers: list_accounts failed: {e}");
+                return;
+            }
+        };
+        for account in accounts {
+            if account.status.as_deref() == Some("inactive") {
+                continue;
+            }
+            let Some(id) = account.id else { continue };
+            let this = self.clone();
+            tokio::spawn(async move {
+                this.idle_loop_for_account(id).await;
+            });
+        }
+    }
+
+    /// Long-running IDLE loop for a single account. Re-enters IDLE forever,
+    /// with exponential backoff on errors.
+    async fn idle_loop_for_account(self: Arc<Self>, account_id: i64) {
+        let mut backoff = IDLE_RESTART_BACKOFF_INITIAL_SECS;
+        loop {
+            match self.run_idle_once(account_id).await {
+                Ok(notified) => {
+                    backoff = IDLE_RESTART_BACKOFF_INITIAL_SECS;
+                    if notified {
+                        info!("idle({account_id}): server reported change, syncing");
+                        if let Err(e) = self.sync_account(account_id).await {
+                            warn!("idle({account_id}): post-notify sync failed: {e}");
+                        }
+                    }
+                }
+                Err(e) => {
+                    warn!("idle({account_id}): {e}; retrying in {backoff}s");
+                    tokio::time::sleep(std::time::Duration::from_secs(backoff)).await;
+                    backoff = (backoff * 2).min(IDLE_RESTART_BACKOFF_MAX_SECS);
+                }
+            }
+        }
+    }
+
+    /// One IDLE pass on INBOX. Returns Ok(true) when the server pushed a
+    /// notification, Ok(false) on the 29-minute timeout.
+    async fn run_idle_once(&self, account_id: i64) -> AppResult<bool> {
+        let account = queries::get_account(self.pool.clone(), account_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound(format!("account {account_id} not found")))?;
+        let email = account
+            .email
+            .clone()
+            .unwrap_or_else(|| format!("account_{account_id}"));
+
+        let imap_cfg = resolve_imap_config(&account)?;
+        let auth = self.build_auth(&account, &email).await?;
+
+        let event = imap_password::idle_wait_once(&imap_cfg, &auth, "INBOX").await?;
+        Ok(matches!(event, imap_password::IdleEvent::Notified))
+    }
+
+    /// Build an `ImapAuth` for an account: XOAUTH2 for OAuth providers with
+    /// stored tokens, password (LOGIN) otherwise.
+    async fn build_auth(&self, account: &Account, email: &str) -> AppResult<ImapAuth> {
+        let provider_str = account.provider.as_deref().unwrap_or("generic_imap");
+        let acc_kind: AccProviderKind = match provider_str {
+            "gmail" => AccProviderKind::Gmail,
+            "outlook" => AccProviderKind::Outlook,
+            "icloud" => AccProviderKind::ICloud,
+            "qq" => AccProviderKind::Qq,
+            "mail163" => AccProviderKind::Mail163,
+            _ => AccProviderKind::GenericImap,
+        };
+
+        let use_oauth = matches!(
+            acc_kind,
+            AccProviderKind::Gmail | AccProviderKind::Outlook
+        ) && oauth_store::has_tokens(acc_kind, email).unwrap_or(false);
+
+        if use_oauth {
+            let tokens =
+                oauth_store::get_valid_tokens(&self.oauth, acc_kind, email, 300).await?;
+            Ok(ImapAuth::XOAuth2 {
+                email: email.to_string(),
+                access_token: tokens.access_token,
+            })
+        } else {
+            let password = super::credentials::load_imap_password(email)?.ok_or_else(|| {
+                AppError::Auth(format!(
+                    "no IMAP password or OAuth tokens stored for {email}"
+                ))
+            })?;
+            Ok(ImapAuth::Password(ImapCredentials {
+                username: email.to_string(),
+                password,
+            }))
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Sanitize a filename so it is safe to write to local disk.
+fn safe_filename(name: &str, fallback_idx: usize) -> String {
+    let cleaned: String = name
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | ' ' | '(' | ')') {
+                c
+            } else {
+                '_'
+            }
+        })
+        .collect();
+    let trimmed = cleaned.trim_matches(|c: char| c == '.' || c.is_whitespace());
+    if trimmed.is_empty() {
+        format!("attachment-{fallback_idx}.bin")
+    } else {
+        trimmed.to_string()
+    }
+}
+
+/// Resolve `<app_data_dir>/attachments/<message_id>` and create it on disk.
+async fn attachments_dir(
+    app: &AppHandle,
+    message_id: i64,
+) -> AppResult<std::path::PathBuf> {
+    let base = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| AppError::Other(e.to_string()))?
+        .join("attachments")
+        .join(message_id.to_string());
+    tokio::fs::create_dir_all(&base).await?;
+    Ok(base)
+}
+
+/// Write each parsed attachment to disk and insert a row into the
+/// `attachments` table. Attachments without unique filenames are de-duplicated
+/// by appending an index suffix.
+async fn store_attachments(
+    app: &AppHandle,
+    pool: &SqlitePool,
+    message_id: i64,
+    parsed: &[crate::accounts::provider::ParsedAttachment],
+) -> AppResult<()> {
+    let dir = attachments_dir(app, message_id).await?;
+    let mut used = std::collections::HashSet::<String>::new();
+
+    for (idx, att) in parsed.iter().enumerate() {
+        let mut name = safe_filename(&att.filename, idx);
+        if used.contains(&name) {
+            let (stem, ext) = match name.rsplit_once('.') {
+                Some((s, e)) => (s.to_string(), format!(".{e}")),
+                None => (name.clone(), String::new()),
+            };
+            name = format!("{stem}-{idx}{ext}");
+        }
+        used.insert(name.clone());
+
+        let path = dir.join(&name);
+        tokio::fs::write(&path, &att.data).await?;
+
+        let row = Attachment {
+            id: None,
+            message_id,
+            filename: Some(att.filename.clone()),
+            mime: att.mime.clone(),
+            size: Some(att.data.len() as i64),
+            content_id: att.content_id.clone(),
+            blob_path: Some(path.to_string_lossy().to_string()),
+            downloaded: Some(1),
+        };
+        queries::insert_attachment(pool, &row).await?;
+    }
+    Ok(())
+}
 
 /// Returns the current unix timestamp as i64 seconds.
 fn now() -> i64 {

@@ -20,35 +20,6 @@ import { formatRelativeTime } from "@/lib/utils";
 import type { AccountSummary, ProviderKind } from "@/types/settings";
 
 // ---------------------------------------------------------------------------
-// Mock data for offline / backend-absent development
-// ---------------------------------------------------------------------------
-const MOCK_ACCOUNTS: AccountSummary[] = [
-  {
-    id: 1,
-    provider: "gmail",
-    email: "alice@gmail.com",
-    display_name: "Alice",
-    status: "active",
-    last_sync_at: Date.now() - 5 * 60 * 1000,
-  },
-  {
-    id: 2,
-    provider: "icloud",
-    email: "alice@icloud.com",
-    display_name: "Alice (iCloud)",
-    status: "syncing",
-    last_sync_at: Date.now() - 60 * 1000,
-  },
-  {
-    id: 3,
-    provider: "outlook",
-    email: "alice@outlook.com",
-    status: "error",
-    error_message: "Authentication expired",
-  },
-];
-
-// ---------------------------------------------------------------------------
 // Provider color/label helpers
 // ---------------------------------------------------------------------------
 const PROVIDER_COLORS: Record<ProviderKind, string> = {
@@ -202,14 +173,26 @@ export function AccountsTab() {
   const [accounts, setAccounts] = React.useState<AccountSummary[]>([]);
   const [confirmId, setConfirmId] = React.useState<number | null>(null);
 
-  React.useEffect(() => {
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+
+  const reload = React.useCallback(() => {
     call<AccountSummary[]>("list_accounts")
-      .then(setAccounts)
-      .catch(() => setAccounts(MOCK_ACCOUNTS));
+      .then((data) => {
+        setAccounts(data);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        setAccounts([]);
+        setLoadError(err instanceof Error ? err.message : String(err));
+      });
   }, []);
 
+  React.useEffect(() => {
+    reload();
+  }, [reload]);
+
   function handleSync(id: number) {
-    call("sync_account", { id }).catch(() => {});
+    call("trigger_sync", { account_id: id }).then(reload).catch(() => {});
     setAccounts((prev) =>
       prev.map((a) => (a.id === id ? { ...a, status: "syncing" } : a))
     );
@@ -249,7 +232,12 @@ export function AccountsTab() {
           </div>
         </CardHeader>
         <CardContent>
-          {accounts.length === 0 ? (
+          {loadError && (
+            <div className="mb-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {loadError}
+            </div>
+          )}
+          {accounts.length === 0 && !loadError ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {t("settings.accounts.no_accounts")}
             </p>

@@ -68,14 +68,11 @@ export function ActivityItem({ run, onReverted }: ActivityItemProps) {
   const handleUndo = async () => {
     setUndoing(true);
     try {
-      try {
-        await call("undo_agent_action", { agent_run_id: run.id });
-      } catch {
-        // Mock: simulate success
-        await new Promise((r) => setTimeout(r, 600));
-      }
+      await call("undo_agent_action", { agent_run_id: run.id });
       setReverted(true);
       onReverted?.(run.id);
+    } catch (err) {
+      console.warn("undo_agent_action failed", err);
     } finally {
       setUndoing(false);
     }

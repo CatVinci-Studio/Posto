@@ -12,6 +12,7 @@ pub mod accounts;
 pub mod agents;
 pub mod llm;
 pub mod memory;
+pub mod messages;
 pub mod storage;
 pub mod sync;
 pub mod translation;
@@ -26,7 +27,7 @@ pub fn run() {
         .init();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             // ---- Storage ----
@@ -34,14 +35,25 @@ pub fn run() {
             app.manage(pool.clone());
 
             // ---- OAuth ----
-            app.manage(accounts::oauth::OAuthFlow::from_env());
+            let oauth_flow = Arc::new(accounts::oauth::OAuthFlow::from_env());
+            app.manage(oauth_flow.clone());
             app.manage(accounts::oauth::PendingStore::default());
 
-            // ---- Sync engine + background polling ----
-            let engine = Arc::new(sync::SyncEngine::new(pool, app.handle().clone()));
+            // ---- Sync engine + background polling + IDLE workers ----
+            let engine = Arc::new(sync::SyncEngine::new(
+                pool,
+                app.handle().clone(),
+                oauth_flow,
+            ));
             let engine_for_loop = engine.clone();
             tauri::async_runtime::spawn(async move {
                 engine_for_loop.run_polling_loop().await;
+            });
+            let engine_for_idle = engine.clone();
+            tauri::async_runtime::spawn(async move {
+                // Allow startup to finish before opening long-lived connections.
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                engine_for_idle.spawn_idle_workers().await;
             });
             app.manage(engine);
 
@@ -53,7 +65,7 @@ pub fn run() {
                     if url_str.starts_with("retposto://oauth/callback") {
                         let handle = app_handle.clone();
                         tauri::async_runtime::spawn(async move {
-                            let flow = handle.state::<accounts::oauth::OAuthFlow>();
+                            let flow = handle.state::<Arc<accounts::oauth::OAuthFlow>>();
                             let pending = handle.state::<accounts::oauth::PendingStore>();
                             if let Err(e) = accounts::oauth::commands::handle_oauth_callback(
                                 url_str,
@@ -77,6 +89,7 @@ pub fn run() {
             commands::greet,
             commands::app_version,
             commands::list_accounts,
+            commands::open_external,
             // Accounts / providers
             accounts::commands::detect_provider,
             accounts::commands::list_providers,
@@ -93,7 +106,10 @@ pub fn run() {
             sync::commands::get_sync_status,
             sync::commands::save_account_password,
             sync::commands::add_password_account,
+            sync::commands::add_custom_imap_account,
             sync::commands::list_folders,
+            sync::commands::list_attachments,
+            sync::commands::open_attachment,
             // LLM
             llm::commands::set_openai_api_key,
             llm::commands::has_openai_api_key,
@@ -102,6 +118,13 @@ pub fn run() {
             // Agents
             agents::commands::trigger_agent_pipeline,
             agents::commands::list_agent_runs,
+            // Messages (inbox / actions)
+            messages::commands::list_inbox_items,
+            messages::commands::mark_read,
+            messages::commands::flag_message,
+            messages::commands::archive_message,
+            messages::commands::delete_message,
+            messages::commands::create_task_from_message,
             // Memory
             memory::commands::list_memories,
             memory::commands::pin_memory,

@@ -10,48 +10,6 @@ import { call } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
 import type { MemoryEntry, MemoryType } from "@/types/settings";
 
-// ---------------------------------------------------------------------------
-// Mock data
-// ---------------------------------------------------------------------------
-const MOCK_MEMORIES: MemoryEntry[] = [
-  {
-    id: 1, type: "contact", scope: "global",
-    content: "Alice Johnson prefers short, bullet-pointed replies.",
-    importance: 0.9, pinned: 1, created_at: Date.now() - 86400000 * 3, use_count: 12,
-  },
-  {
-    id: 2, type: "preference", scope: "global",
-    content: "Always sign off with 'Best regards'.",
-    importance: 0.7, pinned: 0, created_at: Date.now() - 86400000 * 7, use_count: 5,
-  },
-  {
-    id: 3, type: "project", scope: "global",
-    key: "retposto-launch",
-    content: "Project Retposto: targeting May 2026 launch, main contact is CTO Bob.",
-    importance: 0.8, pinned: 1, created_at: Date.now() - 86400000 * 14, use_count: 8,
-  },
-  {
-    id: 4, type: "rule", scope: "global",
-    content: "Newsletters from Substack should be archived automatically.",
-    importance: 0.6, pinned: 0, created_at: Date.now() - 86400000 * 2, use_count: 3,
-  },
-  {
-    id: 5, type: "fact", scope: "global",
-    content: "User's timezone is Asia/Shanghai (UTC+8).",
-    importance: 0.5, pinned: 0, created_at: Date.now() - 86400000 * 1, use_count: 1,
-  },
-  {
-    id: 6, type: "contact", scope: "contact:bob@example.com",
-    content: "Bob Chen is the lead engineer. He sends daily standup summaries.",
-    importance: 0.75, pinned: 0, created_at: Date.now() - 86400000 * 5, use_count: 6,
-  },
-  {
-    id: 7, type: "preference", scope: "global",
-    content: "Use simplified Chinese when replying to emails from qq.com domains.",
-    importance: 0.65, pinned: 0, created_at: Date.now() - 86400000 * 10, use_count: 2,
-  },
-];
-
 const TYPE_COLORS: Record<MemoryType, string> = {
   contact: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
   preference: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
@@ -248,10 +206,17 @@ export function MemoryTab() {
   const [editTarget, setEditTarget] = React.useState<MemoryEntry | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<number | null>(null);
 
+  const [loadError, setLoadError] = React.useState<string | null>(null);
   React.useEffect(() => {
     call<MemoryEntry[]>("list_memories", {})
-      .then(setMemories)
-      .catch(() => setMemories(MOCK_MEMORIES));
+      .then((data) => {
+        setMemories(data);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        setMemories([]);
+        setLoadError(err instanceof Error ? err.message : String(err));
+      });
   }, []);
 
   const filtered = memories.filter((m) => {
@@ -394,6 +359,12 @@ export function MemoryTab() {
           </div>
         </CardContent>
       </Card>
+
+      {loadError && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {loadError}
+        </div>
+      )}
 
       {/* Memory list */}
       {sorted.length === 0 ? (

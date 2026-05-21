@@ -2,36 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+ * Apple Mail-inspired design tokens.
+ *
+ * Light:  iOS/macOS system white background, near-black text, system blue
+ *         (#007AFF) accent. Borders sit just barely above the background to
+ *         get the crisp Apple aesthetic without harsh lines.
+ * Dark:   iOS dark grouped grays (#1c1c1e / #2c2c2e), lighter system blue.
+ * ------------------------------------------------------------------------- */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
+    --background: 0 0% 100%;          /* #FFFFFF */
+    --foreground: 0 0% 7%;            /* near-black */
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
-    --muted: 240 5% 96%;
+    --card-foreground: 0 0% 7%;
+    --muted: 240 6% 97%;              /* #F5F5F7 */
     --muted-foreground: 240 4% 46%;
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
-    --border: 240 6% 90%;
-    --ring: 240 6% 10%;
-    --primary: 240 6% 10%;
-    --primary-foreground: 0 0% 98%;
+    --accent: 211 100% 96%;           /* very light blue */
+    --accent-foreground: 211 100% 35%;
+    --border: 240 6% 92%;             /* hairline */
+    --ring: 211 100% 50%;
+    --primary: 211 100% 50%;          /* iOS system blue #007AFF */
+    --primary-foreground: 0 0% 100%;
+    --destructive: 0 84% 53%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Apple Mail unread pip + flag/star color */
+    --pip: 211 100% 50%;
+    --pip-flagged: 38 100% 50%;       /* orange */
     --radius: 0.5rem;
+
+    /* Apple-style safe area insets passed from native shell */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .dark {
-    --background: 240 10% 4%;
+    --background: 240 6% 7%;          /* #111113 */
     --foreground: 0 0% 98%;
-    --card: 240 10% 6%;
+    --card: 240 4% 11%;               /* #1c1c1e */
     --card-foreground: 0 0% 98%;
-    --muted: 240 4% 16%;
+    --muted: 240 4% 14%;
     --muted-foreground: 240 5% 65%;
-    --accent: 240 4% 16%;
-    --accent-foreground: 0 0% 98%;
-    --border: 240 4% 16%;
-    --ring: 240 5% 84%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 6% 10%;
+    --accent: 211 80% 18%;
+    --accent-foreground: 211 100% 80%;
+    --border: 240 4% 18%;
+    --ring: 211 100% 60%;
+    --primary: 211 100% 60%;          /* lighter blue in dark */
+    --primary-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --pip: 211 100% 60%;
+    --pip-flagged: 38 95% 55%;
   }
 
   * {
@@ -41,9 +64,49 @@
   html,
   body,
   #root {
-    @apply h-full antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-      "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB",
-      "Microsoft YaHei", sans-serif;
+    @apply h-full antialiased text-foreground bg-background;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+      "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    /* iOS-style font smoothing */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern", "liga", "calt";
+  }
+
+  /* Disable text selection inside the chrome (Sidebar / toolbars) but allow
+   * inside message body for a native feel. */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth scroll containers (Apple Mail scrolls smoothly). */
+  .scroll-smooth-y {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+  }
+}
+
+@layer components {
+  /* Apple-style toolbar: translucent backdrop with hairline divider. */
+  .toolbar {
+    @apply border-b border-border bg-background/80 backdrop-blur-xl;
+  }
+
+  /* Tighter list-row look for Apple Mail style InboxList. */
+  .list-row {
+    @apply flex items-stretch gap-3 px-4 py-2 border-b border-border/60;
+  }
+
+  /* Unread blue pip. */
+  .unread-pip {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background-color: hsl(var(--pip));
+    box-shadow: 0 0 0 1px hsl(var(--background));
   }
 }

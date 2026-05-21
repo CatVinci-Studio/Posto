@@ -9,9 +9,11 @@ import {
   Settings as SettingsIcon,
   Plus,
   PenSquare,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { useScreenSize } from "@/hooks/useMediaQuery";
 
 interface NavItem {
   to: string;
@@ -26,20 +28,62 @@ const PRIMARY: NavItem[] = [
   { to: "/inbox?filter=done", labelKey: "sidebar.done", Icon: CheckCircle2 },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  /** Controlled open state — required on mobile, ignored on desktop. */
+  open?: boolean;
+  onClose?: () => void;
+}
+
+/**
+ * Apple Mail-styled sidebar.
+ *
+ * - Desktop (≥768px): persistent, 240px wide, always visible.
+ * - Mobile (<768px): full-height drawer slid in from the left over a scrim.
+ */
+export function Sidebar({ open = false, onClose }: SidebarProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  return (
-    <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-muted/30 p-3">
-      <div className="px-2 py-3 text-lg font-semibold tracking-tight">
-        {t("app.name")}
+  const { isMobile } = useScreenSize();
+
+  const handleNav = (to: string) => {
+    navigate(to);
+    if (isMobile) onClose?.();
+  };
+
+  const content = (
+    <aside
+      className={cn(
+        "flex shrink-0 flex-col bg-muted/40 p-3 no-select",
+        // Desktop: persistent rail.
+        !isMobile && "h-full w-60 border-r border-border",
+        // Mobile: full-height drawer.
+        isMobile &&
+          "fixed left-0 top-0 z-50 h-full w-72 border-r border-border bg-background shadow-2xl transition-transform duration-200",
+        isMobile && (open ? "translate-x-0" : "-translate-x-full")
+      )}
+      style={isMobile ? { paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" } : undefined}
+    >
+      <div className="flex items-center justify-between px-2 py-2">
+        <span className="text-lg font-semibold tracking-tight">
+          {t("app.name")}
+        </span>
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("common.close")}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <Button
         type="button"
         size="md"
         className="mt-1 gap-2"
-        onClick={() => navigate("/compose")}
+        onClick={() => handleNav("/compose")}
       >
         <PenSquare className="h-4 w-4" />
         {t("compose.new")}
@@ -50,12 +94,15 @@ export function Sidebar() {
           <NavLink
             key={to}
             to={to}
+            onClick={() => {
+              if (isMobile) onClose?.();
+            }}
             className={({ isActive }) =>
               cn(
                 "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
                 isActive
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                  ? "bg-accent text-accent-foreground font-medium"
+                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
               )
             }
           >
@@ -72,7 +119,7 @@ export function Sidebar() {
         <button
           type="button"
           className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-          onClick={() => navigate("/onboarding")}
+          onClick={() => handleNav("/onboarding")}
         >
           <Plus className="h-4 w-4" />
           {t("sidebar.add_account")}
@@ -82,6 +129,9 @@ export function Sidebar() {
       <div className="mt-2 flex flex-col gap-1 border-t border-border pt-2">
         <NavLink
           to="/inbox?activity=1"
+          onClick={() => {
+            if (isMobile) onClose?.();
+          }}
           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground"
         >
           <Sparkles className="h-4 w-4" />
@@ -89,12 +139,15 @@ export function Sidebar() {
         </NavLink>
         <NavLink
           to="/settings"
+          onClick={() => {
+            if (isMobile) onClose?.();
+          }}
           className={({ isActive }) =>
             cn(
               "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
               isActive
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                ? "bg-accent text-accent-foreground font-medium"
+                : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
             )
           }
         >
@@ -103,5 +156,23 @@ export function Sidebar() {
         </NavLink>
       </div>
     </aside>
+  );
+
+  if (!isMobile) {
+    return content;
+  }
+
+  return (
+    <>
+      {/* Scrim */}
+      {open && (
+        <div
+          onClick={onClose}
+          aria-hidden
+          className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm animate-fade-in"
+        />
+      )}
+      {content}
+    </>
   );
 }

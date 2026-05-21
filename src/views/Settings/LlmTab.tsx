@@ -36,17 +36,15 @@ export function LlmTab() {
       .catch(() => setKeyConfigured(false));
   }, []);
 
+  const [saveError, setSaveError] = React.useState<string | null>(null);
   async function handleSaveKey() {
+    setSaveError(null);
     try {
       await call("set_openai_api_key", { key: apiKey });
       setKeyConfigured(true);
       setApiKey("");
-    } catch {
-      // mock: mark configured locally
-      if (apiKey.startsWith("sk-")) {
-        setKeyConfigured(true);
-        setApiKey("");
-      }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -121,6 +119,10 @@ export function LlmTab() {
                 {t("settings.llm.save")}
               </Button>
             </div>
+
+            {saveError && (
+              <p className="mt-1 text-xs text-destructive">{saveError}</p>
+            )}
 
             {/* Status indicator */}
             <div className="flex items-center justify-between mt-1">

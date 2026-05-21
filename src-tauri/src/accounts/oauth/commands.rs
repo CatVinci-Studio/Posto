@@ -19,7 +19,7 @@ use super::store::{self, PendingStore};
 pub async fn begin_oauth_login(
     provider: ProviderKind,
     app: tauri::AppHandle,
-    flow: tauri::State<'_, OAuthFlow>,
+    flow: tauri::State<'_, std::sync::Arc<OAuthFlow>>,
     pending: tauri::State<'_, PendingStore>,
 ) -> Result<AuthInitiation, String> {
     let initiation = flow.begin(provider).map_err(|e| e.to_string())?;
@@ -31,12 +31,8 @@ pub async fn begin_oauth_login(
         )
         .await;
 
-    // Open auth URL in the default system browser.
-    // (tauri-plugin-shell's open() is deprecated in favor of tauri-plugin-opener;
-    //  we'll migrate in a follow-up once the rest of the OAuth flow is verified.)
-    #[allow(deprecated)]
-    tauri_plugin_shell::ShellExt::shell(&app)
-        .open(&initiation.auth_url, None)
+    tauri_plugin_opener::OpenerExt::opener(&app)
+        .open_url(&initiation.auth_url, None::<&str>)
         .map_err(|e| e.to_string())?;
 
     info!(provider = ?provider, "OAuth browser login opened");
@@ -55,7 +51,7 @@ pub async fn begin_oauth_login(
 #[tauri::command]
 pub async fn handle_oauth_callback(
     url: String,
-    flow: tauri::State<'_, OAuthFlow>,
+    flow: tauri::State<'_, std::sync::Arc<OAuthFlow>>,
     pending: tauri::State<'_, PendingStore>,
     app: tauri::AppHandle,
 ) -> Result<OAuthTokens, String> {
@@ -118,7 +114,7 @@ pub async fn handle_oauth_callback(
 pub async fn refresh_oauth_tokens(
     provider: ProviderKind,
     account_email: String,
-    flow: tauri::State<'_, OAuthFlow>,
+    flow: tauri::State<'_, std::sync::Arc<OAuthFlow>>,
 ) -> Result<OAuthTokens, String> {
     let stored = store::load_tokens(provider, &account_email)
         .map_err(|e| e.to_string())?

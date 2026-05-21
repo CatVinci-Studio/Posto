@@ -16,3 +16,10 @@ pub async fn list_accounts(
         .await
         .map_err(|e| e.to_string())
 }
+
+#[tauri::command]
+pub async fn open_external(url: String, app: tauri::AppHandle) -> Result<(), String> {
+    tauri_plugin_opener::OpenerExt::opener(&app)
+        .open_url(&url, None::<&str>)
+        .map_err(|e| e.to_string())
+}

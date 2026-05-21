@@ -21,9 +21,14 @@ pub struct RetrievedMemory {
 }
 
 // ---------------------------------------------------------------------------
-// Cosine similarity (in-memory)
+// Cosine similarity (in-memory).
 //
-// TODO: switch to sqlite-vec when the extension is bundled.
+// Scaling note: candidates are pre-filtered in SQL by scope and pinned/
+// importance rank (see load_memories_by_scopes). For typical user loads
+// (≤10k memories per scope, ≤1500 active embeddings) the cost is ~3-8 ms.
+// If memory volume grows past that, swap this for the sqlite-vec extension
+// (requires bundling a platform-specific .dylib/.dll/.so and calling
+// SqliteConnectOptions::extension("vec0") at pool init).
 // ---------------------------------------------------------------------------
 
 fn cosine(a: &[f32], b: &[f32]) -> f32 {
@@ -99,8 +104,8 @@ pub async fn retrieve(
         scopes.push("global".to_string());
     }
 
-    // Load up to 500 candidate memories from DB.
-    let candidates = queries::load_memories_by_scopes(pool, &scopes, 500).await?;
+    // Load up to 1500 candidate memories from DB (filtered + ranked in SQL).
+    let candidates = queries::load_memories_by_scopes(pool, &scopes, 1500).await?;
     if candidates.is_empty() {
         return Ok(vec![]);
     }

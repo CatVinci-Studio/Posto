@@ -2,6 +2,13 @@
   "app": {
     "name": "Retposto"
   },
+  "common": {
+    "close": "关闭",
+    "cancel": "取消",
+    "save": "保存",
+    "ok": "好",
+    "back": "返回"
+  },
   "sidebar": {
     "all_inboxes": "全部收件箱",
     "today": "今天",
@@ -11,13 +18,23 @@
     "accounts": "账户",
     "agent_activity": "Agent 活动",
     "settings": "设置",
-    "add_account": "添加账户"
+    "add_account": "添加账户",
+    "toggle": "切换侧栏"
   },
   "inbox": {
     "empty_newsletters": "暂无订阅邮件。",
     "empty_done": "暂无已完成邮件。",
     "needs_response": "待回复",
     "unknown_sender": "未知发件人",
+    "no_subject": "（无主题）",
+    "unread": "未读",
+    "loading": "加载中…",
+    "no_selection": "选择一封邮件以预览。",
+    "back_to_list": "收件箱",
+    "error": {
+      "title": "加载失败",
+      "subtitle": "下拉刷新，或确认已绑定账户。"
+    },
     "refresh": "刷新",
     "search_placeholder": "搜索…",
     "filters": {
@@ -42,7 +59,10 @@
       "reply": "回复",
       "snooze": "稍后提醒",
       "convert_to_task": "转为任务",
-      "open": "打开"
+      "open": "打开",
+      "flag": "标记",
+      "unflag": "取消标记",
+      "delete": "删除"
     },
     "detail": {
       "summary": "AI 摘要",
@@ -210,6 +230,7 @@
       "always_confirm": "始终确认",
       "rules": "已学规则",
       "add_rule": "添加规则",
+      "no_rules": "暂无自动化规则。Agent 从你的行为中学到规则后会出现在这里。",
       "undo_keep": "撤销历史记录数量"
     }
   },

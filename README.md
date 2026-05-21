@@ -48,6 +48,30 @@ GOOGLE_OAUTH_CLIENT_ID=... MICROSOFT_OAUTH_CLIENT_ID=... bun run tauri build
 - Google Cloud Console → APIs & Services → OAuth client → Desktop application; add `retposto://oauth/callback` as redirect.
 - Microsoft Entra (Azure AD) → App registrations → Public client; add `retposto://oauth/callback` as redirect.
 
+## Mobile (iOS / Android)
+
+The project is configured for Tauri 2 mobile builds: `tauri.conf.json` declares
+the iOS / Android bundle keys, a `capabilities/mobile.json` capabilities file
+is in place, the UI is responsive (sidebar drawer + iOS-style swipe-to-archive
+in `InboxList`), and the deep-link plugin is configured for both desktop URL
+schemes and mobile `https://` association.
+
+To initialize mobile platforms locally (one-time, requires Xcode 14+ / Android
+Studio + Android SDK 24+):
+
+```bash
+bun run tauri ios init
+bun run tauri android init
+bun run tauri ios dev       # or:  bun run tauri android dev
+```
+
+Known limitations on Android:
+
+- `keyring` 3.x has no Android backend. OAuth refresh tokens and IMAP
+  passwords need to be migrated to a platform-specific secure store before
+  shipping Android builds — `tauri-plugin-stronghold` is the recommended
+  replacement.
+
 ## Architecture
 
 ```

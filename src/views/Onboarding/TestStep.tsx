@@ -7,15 +7,20 @@ interface Props {
   onSuccess: () => void;
 }
 
+/**
+ * Onboarding completion screen. The actual IMAP / OAuth connection test
+ * happens inside `AuthStep` (test_imap_login or begin_oauth_login →
+ * handle_oauth_callback). By the time we reach this step the credentials
+ * have already been verified and persisted in the keychain; this is the
+ * brief "all set" animation before showing SuccessStep.
+ */
 export function TestStep({ onSuccess }: Props) {
   const { t } = useTranslation();
 
   React.useEffect(() => {
-    // TODO: replace with real IPC call to test_imap_login (password-based providers)
-    // or call('finalize_oauth_account', { ... }) for OAuth providers
     const timer = setTimeout(() => {
       onSuccess();
-    }, 1500);
+    }, 800);
     return () => clearTimeout(timer);
   }, [onSuccess]);
 

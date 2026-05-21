@@ -1,19 +1,18 @@
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { call } from "@/lib/tauri";
-import { getMockItems } from "@/lib/mockData";
 import { useInboxStore } from "@/stores/inboxStore";
+import { useScreenSize } from "@/hooks/useMediaQuery";
 import { EmptyState } from "./EmptyState";
 import { EmailCard } from "./EmailCard";
 import type { InboxItem } from "@/types/email";
 import type { InboxFilter } from "@/stores/inboxStore";
 
-// ---- Date bucketing helpers ----
 const DAY_S = 86400;
 
 function isToday(dateUnix: number): boolean {
   const now = Math.floor(Date.now() / 1000);
-  const sod = now - (now % DAY_S); // start of day UTC
+  const sod = now - (now % DAY_S);
   return dateUnix >= sod;
 }
 
@@ -39,63 +38,28 @@ function getSectionKey(dateUnix?: number): SectionKey {
   return "older";
 }
 
-// ---- Data fetching with mock fallback ----
 async function fetchMessages(filter: InboxFilter): Promise<InboxItem[]> {
-  try {
-    const items = await call<InboxItem[]>("list_messages", {
+  return await call<InboxItem[]>("list_inbox_items", {
+    filter: {
       account_id: filter.account_id ?? null,
       category: filter.category ?? null,
       status: filter.status ?? null,
-    });
-    return items;
-  } catch {
-    // Backend not ready — use mock data
-    return getMockItems();
-  }
+    },
+  });
 }
 
-function filterItems(items: InboxItem[], filter: InboxFilter, search: string): InboxItem[] {
-  let result = items;
-
-  if (filter.status === "newsletters") {
-    result = result.filter((i) => i.enrichment?.category === "newsletter");
-  } else if (filter.status === "today") {
-    result = result.filter((i) => isToday(i.message.date ?? 0));
-  } else if (filter.status === "week") {
-    const now = Math.floor(Date.now() / 1000);
-    result = result.filter(
-      (i) => (i.message.date ?? 0) >= now - 7 * DAY_S
-    );
-  } else if (filter.status === "done") {
-    result = result.filter((i) => {
-      const flags = i.message.flags ? JSON.parse(i.message.flags) : [];
-      return Array.isArray(flags) && flags.includes("\\Seen");
-    });
-  }
-
-  if (filter.category) {
-    result = result.filter((i) => i.enrichment?.category === filter.category);
-  }
-
-  if (filter.account_id != null) {
-    result = result.filter((i) => i.message.account_id === filter.account_id);
-  }
-
-  if (search.trim()) {
-    const q = search.toLowerCase();
-    result = result.filter(
-      (i) =>
-        i.message.subject?.toLowerCase().includes(q) ||
-        i.message.from_name?.toLowerCase().includes(q) ||
-        i.message.from_addr?.toLowerCase().includes(q) ||
-        i.enrichment?.summary?.toLowerCase().includes(q)
-    );
-  }
-
-  return result;
+function applySearch(items: InboxItem[], search: string): InboxItem[] {
+  if (!search.trim()) return items;
+  const q = search.toLowerCase();
+  return items.filter(
+    (i) =>
+      i.message.subject?.toLowerCase().includes(q) ||
+      i.message.from_name?.toLowerCase().includes(q) ||
+      i.message.from_addr?.toLowerCase().includes(q) ||
+      i.message.snippet?.toLowerCase().includes(q) ||
+      i.enrichment?.summary?.toLowerCase().includes(q)
+  );
 }
-
-// ---- Component ----
 
 interface InboxListProps {
   search: string;
@@ -104,8 +68,9 @@ interface InboxListProps {
 export function InboxList({ search }: InboxListProps) {
   const { t } = useTranslation();
   const { filter } = useInboxStore();
+  const { isMobile } = useScreenSize();
 
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isLoading, isError } = useQuery({
     queryKey: ["messages", filter],
     queryFn: () => fetchMessages(filter),
     staleTime: 30_000,
@@ -115,13 +80,23 @@ export function InboxList({ search }: InboxListProps) {
     return (
       <div className="flex h-full items-center justify-center">
         <span className="text-sm text-muted-foreground animate-pulse">
-          Loading…
+          {t("inbox.loading")}
         </span>
       </div>
     );
   }
 
-  const filtered = filterItems(items, filter, search);
+  if (isError) {
+    return (
+      <EmptyState
+        icon="⚠️"
+        title={t("inbox.error.title")}
+        subtitle={t("inbox.error.subtitle")}
+      />
+    );
+  }
+
+  const filtered = applySearch(items, search);
 
   if (filtered.length === 0) {
     const emptyTitle =
@@ -140,8 +115,12 @@ export function InboxList({ search }: InboxListProps) {
     );
   }
 
-  // Group by date section
-  const SECTION_ORDER: SectionKey[] = ["today", "yesterday", "this_week", "older"];
+  const SECTION_ORDER: SectionKey[] = [
+    "today",
+    "yesterday",
+    "this_week",
+    "older",
+  ];
   const sections = new Map<SectionKey, InboxItem[]>();
   for (const item of filtered) {
     const key = getSectionKey(item.message.date);
@@ -150,16 +129,20 @@ export function InboxList({ search }: InboxListProps) {
   }
 
   return (
-    <div className="overflow-y-auto h-full">
+    <div className="overflow-y-auto h-full scroll-smooth-y">
       {SECTION_ORDER.filter((k) => sections.has(k)).map((sectionKey) => (
         <div key={sectionKey}>
-          <div className="sticky top-0 z-10 border-b border-border bg-muted/60 px-3 py-1.5 backdrop-blur-sm">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="sticky top-0 z-10 border-b border-border bg-background/85 px-4 py-1.5 backdrop-blur-xl">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {t(`inbox.sections.${sectionKey}`)}
             </span>
           </div>
           {sections.get(sectionKey)!.map((item) => (
-            <EmailCard key={item.message.id} item={item} />
+            <EmailCard
+              key={item.message.id}
+              item={item}
+              swipeEnabled={isMobile}
+            />
           ))}
         </div>
       ))}

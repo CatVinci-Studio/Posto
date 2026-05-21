@@ -1,4 +1,4 @@
-use crate::accounts::imap_password::{self, ImapCredentials};
+use crate::accounts::imap_password::{self, ImapAuth, ImapCredentials};
 use crate::accounts::provider::{Encryption, ImapConfig, ProviderConfig, ProviderKind};
 use crate::accounts::provider_catalog;
 
@@ -39,8 +39,8 @@ pub async fn test_imap_login(
         port,
         encryption,
     };
-    let creds = ImapCredentials { username, password };
-    imap_password::test_connection(&imap_config, &creds)
+    let auth = ImapAuth::Password(ImapCredentials { username, password });
+    imap_password::test_connection(&imap_config, &auth)
         .await
         .map_err(|e| e.to_string())
 }

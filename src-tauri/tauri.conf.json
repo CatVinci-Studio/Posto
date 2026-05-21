@@ -16,8 +16,10 @@
         "title": "Retposto",
         "width": 1280,
         "height": 800,
-        "minWidth": 900,
-        "minHeight": 600
+        "minWidth": 380,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
       }
     ],
     "security": {
@@ -29,13 +31,25 @@
     "targets": "all",
     "category": "Productivity",
     "shortDescription": "Agent-based email manager",
-    "longDescription": "Retposto turns your inbox into a task list, powered by Agents."
+    "longDescription": "Retposto turns your inbox into a task list, powered by Agents.",
+    "iOS": {
+      "minimumSystemVersion": "14.0"
+    },
+    "android": {
+      "minSdkVersion": 24
+    }
   },
   "plugins": {
     "deep-link": {
       "desktop": {
         "schemes": ["retposto"]
-      }
+      },
+      "mobile": [
+        {
+          "host": "oauth.retposto.app",
+          "pathPrefix": ["/callback"]
+        }
+      ]
     }
   }
 }

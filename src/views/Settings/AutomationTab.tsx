@@ -78,24 +78,6 @@ function ImmutableActionRow({ label, badge }: ImmutableActionRowProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Mock rules
-// ---------------------------------------------------------------------------
-const MOCK_RULES = [
-  {
-    id: 1,
-    condition: "From: *@substack.com",
-    action: "Archive automatically",
-    active: true,
-  },
-  {
-    id: 2,
-    condition: "Subject contains: [Invoice]",
-    action: "Label as Finance",
-    active: true,
-  },
-];
-
-// ---------------------------------------------------------------------------
 // AutomationTab
 // ---------------------------------------------------------------------------
 export function AutomationTab() {
@@ -236,22 +218,9 @@ export function AutomationTab() {
           )}
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {MOCK_RULES.map((rule) => (
-              <div
-                key={rule.id}
-                className="flex items-start justify-between rounded-md border border-border bg-muted/30 px-3 py-2.5"
-              >
-                <div className="space-y-0.5">
-                  <p className="text-xs font-mono text-muted-foreground">{rule.condition}</p>
-                  <p className="text-sm">{rule.action}</p>
-                </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${rule.active ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-muted text-muted-foreground"}`}>
-                  {rule.active ? "Active" : "Disabled"}
-                </span>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-muted-foreground text-center py-6">
+            {t("settings.automation.no_rules")}
+          </p>
         </CardContent>
       </Card>
     </div>

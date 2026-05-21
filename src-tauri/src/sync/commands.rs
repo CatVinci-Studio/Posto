@@ -3,9 +3,9 @@ use std::sync::Arc;
 use sqlx::SqlitePool;
 use tauri::State;
 
-use crate::accounts::provider::ProviderKind as AccountProviderKind;
+use crate::accounts::provider::{Encryption, ProviderKind as AccountProviderKind};
 use crate::accounts::provider_catalog;
-use crate::storage::models::{Account, Folder, ProviderKind};
+use crate::storage::models::{Account, Attachment, Folder, ProviderKind};
 use crate::storage::queries;
 
 use super::credentials;
@@ -119,6 +119,58 @@ pub async fn add_password_account(
     Ok(account_id)
 }
 
+/// Add a custom IMAP account (generic_imap) — user supplies explicit IMAP/SMTP
+/// configuration. SMTP fields are optional; if omitted, sending is disabled.
+#[tauri::command]
+pub async fn add_custom_imap_account(
+    email: String,
+    password: String,
+    display_name: Option<String>,
+    imap_host: String,
+    imap_port: u16,
+    imap_encryption: String, // "tls" | "starttls" | "none"
+    smtp_host: Option<String>,
+    smtp_port: Option<u16>,
+    smtp_encryption: Option<String>,
+    pool: State<'_, SqlitePool>,
+) -> Result<i64, String> {
+    fn parse_encryption(s: &str) -> Result<Encryption, String> {
+        match s.to_ascii_lowercase().as_str() {
+            "tls" => Ok(Encryption::Tls),
+            "starttls" => Ok(Encryption::StartTls),
+            "none" => Ok(Encryption::None),
+            other => Err(format!("invalid encryption '{other}'")),
+        }
+    }
+
+    let imap_enc = parse_encryption(&imap_encryption)?;
+    let smtp_enc = smtp_encryption.as_deref().map(parse_encryption).transpose()?;
+
+    credentials::save_imap_password(&email, &password).map_err(|e| e.to_string())?;
+
+    let now = chrono::Utc::now().timestamp();
+    let account = Account {
+        id: None,
+        provider: Some("generic_imap".to_string()),
+        email: Some(email.clone()),
+        display_name,
+        oauth_token_ref: None,
+        imap_host: Some(imap_host),
+        imap_port: Some(imap_port as i64),
+        imap_encryption: Some(format!("{:?}", imap_enc).to_lowercase()),
+        smtp_host,
+        smtp_port: smtp_port.map(|p| p as i64),
+        smtp_encryption: smtp_enc.map(|e| format!("{:?}", e).to_lowercase()),
+        status: Some("active".to_string()),
+        created_at: now,
+        updated_at: now,
+    };
+
+    queries::insert_account(&pool, &account)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Return all folders stored locally for the given account.
 #[tauri::command]
 pub async fn list_folders(
@@ -127,6 +179,35 @@ pub async fn list_folders(
 ) -> Result<Vec<Folder>, String> {
     queries::list_folders(pool.inner().clone(), account_id)
         .await
+        .map_err(|e| e.to_string())
+}
+
+/// List attachments stored locally for a message.
+#[tauri::command]
+pub async fn list_attachments(
+    message_id: i64,
+    pool: State<'_, SqlitePool>,
+) -> Result<Vec<Attachment>, String> {
+    queries::list_attachments(&pool, message_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Open an attachment in the OS default handler via tauri-plugin-opener.
+#[tauri::command]
+pub async fn open_attachment(
+    attachment_id: i64,
+    pool: State<'_, SqlitePool>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let att = queries::get_attachment(&pool, attachment_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    let path = att
+        .blob_path
+        .ok_or_else(|| "attachment has no local blob_path".to_string())?;
+    tauri_plugin_opener::OpenerExt::opener(&app)
+        .open_path(&path, None::<&str>)
         .map_err(|e| e.to_string())
 }
 

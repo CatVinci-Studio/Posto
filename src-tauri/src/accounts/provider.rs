@@ -65,6 +65,15 @@ pub struct FolderInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParsedAttachment {
+    pub filename: String,
+    pub mime: Option<String>,
+    pub content_id: Option<String>,
+    #[serde(skip)]
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParsedEmail {
     pub message_id: Option<String>,
     pub from_addr: Option<String>,
@@ -78,4 +87,6 @@ pub struct ParsedEmail {
     pub snippet: String,          // first ~200 chars of text
     pub has_attachments: bool,
     pub size: usize,
+    #[serde(skip)]
+    pub attachments: Vec<ParsedAttachment>,
 }

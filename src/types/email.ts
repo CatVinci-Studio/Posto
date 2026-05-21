@@ -55,6 +55,11 @@ export type AgentCategory =
   | "social"
   | "spam";
 
+export interface SuggestedTask {
+  title: string;
+  due_at?: number;
+}
+
 export interface MessageEnrichment {
   message_id: number;
   category?: AgentCategory;
@@ -64,6 +69,7 @@ export interface MessageEnrichment {
   is_actionable?: boolean;
   needs_response?: boolean;
   task_count?: number;
+  tasks?: SuggestedTask[];
 }
 
 export interface InboxItem {
