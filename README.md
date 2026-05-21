@@ -1,26 +1,66 @@
 # Retposto
 
-Agent-based 邮件管理器。Tauri 2 + Rust + React + TypeScript。
+Agent-based email manager — turns your inbox into a task list, powered by AI.
 
-## 开发
+Tauri 2 · Rust · React · TypeScript · cross-platform desktop (macOS, Windows, Linux).
+
+## Highlights
+
+- **One inbox for everything** — Gmail · Outlook · iCloud · QQ · 163, plus generic IMAP for the rest
+- **Agent does the heavy lifting** — auto-classify, summarize, extract todos, draft replies
+- **Long-term memory** — learns your contacts, preferences, ongoing projects, automation rules
+- **Four-layer language model** — UI language, display language, reply language, prompt language all independent
+- **Offline-first** — full content cached locally; agents run and queue actions offline
+- **Trust-first automation** — three trust levels; send/delete always require confirmation; every agent action is undoable
+- **Local-only secrets** — OAuth refresh tokens and API keys live in the system keychain, never in plaintext
+
+## Quick start
+
+Prerequisites: [Bun](https://bun.sh), [Rust](https://rustup.rs) (1.77+), and platform build tools (Xcode CLT on macOS; build-essential + WebKitGTK on Linux; MSVC on Windows).
 
 ```bash
 bun install
 bun run tauri dev
 ```
 
-## 支持的邮箱
+For a release bundle:
 
-第一方支持（流畅登录）：
+```bash
+bun run tauri build
+```
 
-- **Gmail** — OAuth 2.0
-- **Outlook / Microsoft 365** — OAuth 2.0
-- **iCloud Mail** — App-Specific Password
-- **QQ 邮箱** — IMAP 授权码
-- **163 / 126 网易** — IMAP 授权码
+The bundles land in `src-tauri/target/release/bundle/` (`.app` / `.dmg` / `.msi` / `.deb` / `.AppImage`).
 
-其他邮箱通过通用 IMAP/SMTP 入口手动配置。
+## Configuration
 
-## 状态
+### LLM provider
 
-P0 脚手架。详见对话上下文里的开发行程。
+Configure an OpenAI API key in Settings → LLM Provider. (ChatGPT OAuth sign-in is experimental and gated behind a future release.)
+
+### OAuth client IDs
+
+For Gmail / Outlook sign-in to work, register OAuth Desktop apps and provide the client IDs via env vars at build time:
+
+```bash
+GOOGLE_OAUTH_CLIENT_ID=... MICROSOFT_OAUTH_CLIENT_ID=... bun run tauri build
+```
+
+- Google Cloud Console → APIs & Services → OAuth client → Desktop application; add `retposto://oauth/callback` as redirect.
+- Microsoft Entra (Azure AD) → App registrations → Public client; add `retposto://oauth/callback` as redirect.
+
+## Architecture
+
+```
+React UI  ──IPC──▶  Rust Core
+                     ├─ Accounts (OAuth + IMAP)
+                     ├─ Sync engine (polling; IDLE planned)
+                     ├─ Storage (SQLite + FTS5)
+                     ├─ LLM provider (OpenAI; abstracted)
+                     ├─ Agents (Triage / Summary / Action / Reflection)
+                     ├─ Memory (5 types, vector retrieval)
+                     └─ Translation (cached per-message)
+```
+
+## License
+
+MIT — see [LICENSE](./LICENSE).

@@ -14,13 +14,102 @@
     "add_account": "添加账户"
   },
   "inbox": {
-    "empty": "收件箱已清空。",
+    "empty_newsletters": "暂无订阅邮件。",
+    "empty_done": "暂无已完成邮件。",
+    "needs_response": "待回复",
+    "unknown_sender": "未知发件人",
+    "refresh": "刷新",
+    "search_placeholder": "搜索…",
+    "filters": {
+      "all": "全部",
+      "today": "今天",
+      "week": "本周",
+      "newsletters": "订阅",
+      "done": "已完成"
+    },
+    "sections": {
+      "today": "今天",
+      "yesterday": "昨天",
+      "this_week": "本周",
+      "older": "更早"
+    },
+    "empty": {
+      "title": "📬 收件箱已清空，没有待处理邮件。",
+      "subtitle": "全部处理完毕！稍后再来看看。"
+    },
     "actions": {
       "archive": "归档",
       "reply": "回复",
       "snooze": "稍后提醒",
       "convert_to_task": "转为任务",
       "open": "打开"
+    },
+    "detail": {
+      "summary": "AI 摘要",
+      "suggested_tasks": "建议任务",
+      "original": "查看原文",
+      "translated": "查看译文",
+      "toggle_translation": "翻译",
+      "to": "收件人",
+      "cc": "抄送"
+    },
+    "categories": {
+      "urgent": "紧急",
+      "work": "工作",
+      "personal": "个人",
+      "newsletter": "订阅",
+      "transactional": "通知",
+      "social": "社交",
+      "spam": "垃圾"
+    }
+  },
+  "compose": {
+    "new": "新邮件",
+    "reply_to": "回复",
+    "from": "发件人",
+    "to": "收件人",
+    "cc": "抄送",
+    "bcc": "密送",
+    "subject": "主题",
+    "body_placeholder": "在这里写你的邮件…",
+    "send": "发送",
+    "save_draft": "保存草稿",
+    "discard": "丢弃",
+    "discard_confirm": "确定丢弃？这封邮件及所有未保存的内容将会丢失。",
+    "ai_assist": "AI 助手",
+    "draft_saved": "草稿已保存",
+    "sent": "已发送！",
+    "sending": "发送中…",
+    "ai": {
+      "generate_reply": "生成回复草稿",
+      "improve_writing": "优化写作",
+      "translate_to": "翻译到…",
+      "tone": "语气",
+      "tone_casual": "随意",
+      "tone_neutral": "中性",
+      "tone_formal": "正式",
+      "detected_lang": "检测到的语言",
+      "ai_not_configured": "请在设置中配置 LLM 模型以启用 AI 辅助功能。"
+    }
+  },
+  "activity": {
+    "title": "Agent 活动",
+    "pause": "暂停",
+    "resume": "继续",
+    "empty": "暂无 Agent 活动记录。",
+    "show_history": "查看完整活动历史",
+    "actions": {
+      "undo": "撤销",
+      "undone": "已撤销",
+      "cannot_undo": "无法撤销"
+    },
+    "types": {
+      "triage": "分类",
+      "summary": "摘要",
+      "action": "操作",
+      "rule": "规则",
+      "draft": "草稿",
+      "reflection": "反思"
     }
   },
   "settings": {
@@ -30,7 +119,99 @@
     "language": "语言",
     "memory": "长期记忆",
     "automation": "自动化",
-    "about": "关于"
+    "about": "关于",
+    "tabs": {
+      "general": "通用",
+      "accounts": "账户",
+      "llm": "AI 模型",
+      "language": "语言",
+      "memory": "长期记忆",
+      "automation": "自动化",
+      "about": "关于"
+    },
+    "general": {
+      "ui_lang": "界面语言",
+      "display_lang": "显示语言",
+      "theme": "主题",
+      "theme_system": "跟随系统",
+      "theme_light": "浅色",
+      "theme_dark": "深色"
+    },
+    "accounts": {
+      "add": "添加账户",
+      "no_accounts": "尚未连接任何账户，请添加一个账户以开始使用。",
+      "last_synced": "上次同步",
+      "actions": {
+        "sync_now": "立即同步",
+        "edit": "编辑",
+        "remove": "移除"
+      },
+      "confirm_remove": "确定要移除这个账户吗？这将停止同步并删除本地数据。"
+    },
+    "llm": {
+      "api_key": "API 密钥",
+      "api_key_placeholder": "sk-...",
+      "save": "保存",
+      "test_connection": "测试连接",
+      "test_in_progress": "测试中…",
+      "test_success": "连接成功",
+      "test_failure": "连接失败",
+      "key_configured": "密钥已配置",
+      "no_key": "未设置密钥",
+      "clear_key": "清除密钥",
+      "confirm_clear": "确定清除 API 密钥吗？",
+      "model": "模型",
+      "privacy_note": "所有 LLM 调用均直接从您的设备发出。您的邮件和提示词仅发送至您配置的服务商，Retposto 不会存储任何内容。"
+    },
+    "language": {
+      "ui_lang_desc": "应用界面的语言，包括菜单、按钮和标签。",
+      "display_lang": "显示语言",
+      "display_lang_desc": "邮件内容将以此语言显示，其他语言的邮件将被自动翻译。",
+      "display_lang_original": "原文（不翻译）",
+      "reply_lang_desc": "回复邮件时使用的语言。「自动」表示 AI 会匹配发件人的语言。",
+      "prompt_lang_desc": "所有内部 AI 提示词均固定为英语，以保证稳定性。",
+      "reply_lang": {
+        "auto": "自动（匹配发件人）"
+      }
+    },
+    "memory": {
+      "add": "添加记忆",
+      "export": "导出为 Markdown",
+      "filter_type": "类型",
+      "filter_scope": "范围",
+      "search": "搜索记忆…",
+      "no_memories": "暂无记忆条目。AI 将在你处理邮件的过程中逐渐学习。",
+      "confirm_delete": "永久删除这条记忆？删除后 AI 将无法再访问它。",
+      "pin": "置顶",
+      "unpin": "取消置顶",
+      "importance": "重要性"
+    },
+    "automation": {
+      "trust_level": {
+        "aggressive": "激进",
+        "medium": "均衡",
+        "conservative": "保守"
+      },
+      "trust_level_desc": {
+        "aggressive": "Agent 完全自主操作：自动分类、打标签、归档、移动并起草回复，无需确认。只有发送和删除仍需确认。",
+        "medium": "Agent 自动执行低风险操作（分类、标记已读），在移动或归档订阅邮件前询问确认。适合大多数用户。",
+        "conservative": "除分类外，Agent 每步操作都会询问确认。最大程度的控制，最少的自动化。"
+      },
+      "actions": {
+        "classify": "邮件分类",
+        "label": "应用标签",
+        "archive_newsletter": "归档订阅邮件",
+        "move_folder": "移动到文件夹",
+        "mark_read": "标记为已读",
+        "generate_draft": "生成回复草稿",
+        "send": "发送邮件",
+        "delete_action": "删除 / 移入废纸篓"
+      },
+      "always_confirm": "始终确认",
+      "rules": "已学规则",
+      "add_rule": "添加规则",
+      "undo_keep": "撤销历史记录数量"
+    }
   },
   "onboarding": {
     "welcome": "欢迎使用 Retposto",

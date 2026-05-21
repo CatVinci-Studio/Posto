@@ -1,7 +1,9 @@
+use std::collections::HashSet;
+
 use sqlx::SqlitePool;
 
-use crate::error::AppResult;
-use super::models::{Account, Folder, Memory, MemoryType, Message};
+use crate::error::{AppError, AppResult};
+use super::models::{Account, AgentRun, Folder, Memory, MemoryType, Message, Task, Translation};
 
 // ---------------------------------------------------------------------------
 // Accounts
@@ -171,6 +173,67 @@ pub async fn list_messages_for_folder(
 }
 
 // ---------------------------------------------------------------------------
+// Additional account / folder / message helpers (added by sync module)
+// ---------------------------------------------------------------------------
+
+/// Fetch a single account by its primary-key id.
+pub async fn get_account(pool: SqlitePool, id: i64) -> AppResult<Option<Account>> {
+    let row = sqlx::query_as::<_, Account>(
+        "SELECT id, provider, email, display_name, oauth_token_ref,
+                imap_host, imap_port, imap_encryption,
+                smtp_host, smtp_port, smtp_encryption,
+                status, created_at, updated_at
+         FROM accounts
+         WHERE id = ?1",
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await?;
+    Ok(row)
+}
+
+/// Return the `id` of a folder identified by `(account_id, imap_path)`, if any.
+pub async fn get_folder_id_by_path(
+    pool: SqlitePool,
+    account_id: i64,
+    imap_path: &str,
+) -> AppResult<Option<i64>> {
+    let row: Option<(i64,)> = sqlx::query_as(
+        "SELECT id FROM folders WHERE account_id = ?1 AND imap_path = ?2",
+    )
+    .bind(account_id)
+    .bind(imap_path)
+    .fetch_optional(&pool)
+    .await?;
+    Ok(row.map(|(id,)| id))
+}
+
+/// Return all folders stored for a given account.
+pub async fn list_folders(pool: SqlitePool, account_id: i64) -> AppResult<Vec<Folder>> {
+    let rows = sqlx::query_as::<_, Folder>(
+        "SELECT id, account_id, name, kind, imap_path, uid_validity, uid_next
+         FROM folders
+         WHERE account_id = ?1
+         ORDER BY id ASC",
+    )
+    .bind(account_id)
+    .fetch_all(&pool)
+    .await?;
+    Ok(rows)
+}
+
+/// Return the set of UIDs already stored for a given `folder_id`.
+pub async fn list_existing_uids(pool: SqlitePool, folder_id: i64) -> AppResult<HashSet<u32>> {
+    let rows: Vec<(i64,)> = sqlx::query_as(
+        "SELECT uid FROM messages WHERE folder_id = ?1",
+    )
+    .bind(folder_id)
+    .fetch_all(&pool)
+    .await?;
+    Ok(rows.into_iter().map(|(uid,)| uid as u32).collect())
+}
+
+// ---------------------------------------------------------------------------
 // Memories
 // ---------------------------------------------------------------------------
 
@@ -246,4 +309,261 @@ pub async fn search_memories(
     };
 
     Ok(rows)
+}
+
+// ---------------------------------------------------------------------------
+// Messages — additional helpers (new, additive)
+// ---------------------------------------------------------------------------
+
+/// Load a single message by primary-key id.
+pub async fn get_message(pool: &SqlitePool, id: i64) -> AppResult<Message> {
+    let row = sqlx::query_as::<_, Message>(
+        "SELECT id, account_id, folder_id, uid, message_id_header, thread_id,
+                from_addr, from_name, to_addrs, cc_addrs, subject, date,
+                snippet, body_text, body_html, flags, labels,
+                detected_lang, lang_confidence, has_attachments, size, created_at
+         FROM messages
+         WHERE id = ?1",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or_else(|| AppError::NotFound(format!("message id={id}")))?;
+    Ok(row)
+}
+
+/// Update detected_lang for a message if it is currently NULL.
+pub async fn update_message_lang(pool: &SqlitePool, id: i64, lang: &str) -> AppResult<()> {
+    sqlx::query(
+        "UPDATE messages SET detected_lang = ?1
+         WHERE id = ?2 AND detected_lang IS NULL",
+    )
+    .bind(lang)
+    .bind(id)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// AgentRun — new helpers
+// ---------------------------------------------------------------------------
+
+pub async fn insert_agent_run(pool: &SqlitePool, run: &AgentRun) -> AppResult<i64> {
+    let now = chrono::Utc::now().timestamp();
+    let created_at = if run.created_at == 0 { now } else { run.created_at };
+
+    let result = sqlx::query(
+        "INSERT INTO agent_runs
+            (message_id, agent_type, input_summary, output,
+             tokens_in, tokens_out, model, cost, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+    )
+    .bind(run.message_id)
+    .bind(&run.agent_type)
+    .bind(&run.input_summary)
+    .bind(&run.output)
+    .bind(run.tokens_in)
+    .bind(run.tokens_out)
+    .bind(&run.model)
+    .bind(run.cost)
+    .bind(created_at)
+    .execute(pool)
+    .await?;
+
+    Ok(result.last_insert_rowid())
+}
+
+pub async fn list_agent_runs(
+    pool: &SqlitePool,
+    message_id: Option<i64>,
+    limit: i64,
+) -> AppResult<Vec<AgentRun>> {
+    let rows = match message_id {
+        Some(mid) => {
+            sqlx::query_as::<_, AgentRun>(
+                "SELECT id, message_id, agent_type, input_summary, output,
+                        tokens_in, tokens_out, model, cost, created_at
+                 FROM agent_runs
+                 WHERE message_id = ?1
+                 ORDER BY created_at DESC
+                 LIMIT ?2",
+            )
+            .bind(mid)
+            .bind(limit)
+            .fetch_all(pool)
+            .await?
+        }
+        None => {
+            sqlx::query_as::<_, AgentRun>(
+                "SELECT id, message_id, agent_type, input_summary, output,
+                        tokens_in, tokens_out, model, cost, created_at
+                 FROM agent_runs
+                 ORDER BY created_at DESC
+                 LIMIT ?1",
+            )
+            .bind(limit)
+            .fetch_all(pool)
+            .await?
+        }
+    };
+    Ok(rows)
+}
+
+// ---------------------------------------------------------------------------
+// Tasks — new helpers
+// ---------------------------------------------------------------------------
+
+pub async fn insert_task(pool: &SqlitePool, task: &Task) -> AppResult<i64> {
+    let now = chrono::Utc::now().timestamp();
+    let created_at = if task.created_at == 0 { now } else { task.created_at };
+
+    let result = sqlx::query(
+        "INSERT INTO tasks
+            (message_id, account_id, title, due_at, status, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+    )
+    .bind(task.message_id)
+    .bind(task.account_id)
+    .bind(&task.title)
+    .bind(task.due_at)
+    .bind(task.status.as_deref().unwrap_or("open"))
+    .bind(created_at)
+    .execute(pool)
+    .await?;
+
+    Ok(result.last_insert_rowid())
+}
+
+// ---------------------------------------------------------------------------
+// Memories — additional helpers
+// ---------------------------------------------------------------------------
+
+/// Load all memories whose scope equals one of the provided values.
+pub async fn load_memories_by_scopes(
+    pool: &SqlitePool,
+    scopes: &[String],
+    limit: i64,
+) -> AppResult<Vec<Memory>> {
+    if scopes.is_empty() {
+        return Ok(vec![]);
+    }
+
+    // Build a parameterised IN clause dynamically.
+    let placeholders: String = scopes
+        .iter()
+        .enumerate()
+        .map(|(i, _)| format!("?{}", i + 1))
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    let sql = format!(
+        "SELECT id, type, scope, key, content, embedding, importance, pinned,
+                source_message_id, created_at, last_used_at, use_count
+         FROM memories
+         WHERE scope IN ({placeholders})
+         ORDER BY importance DESC, last_used_at DESC
+         LIMIT ?{}",
+        scopes.len() + 1
+    );
+
+    let mut query = sqlx::query_as::<_, Memory>(&sql);
+    for s in scopes {
+        query = query.bind(s.as_str());
+    }
+    query = query.bind(limit);
+
+    let rows = query.fetch_all(pool).await?;
+    Ok(rows)
+}
+
+/// Update importance on an existing memory row.
+pub async fn update_memory_importance(
+    pool: &SqlitePool,
+    id: i64,
+    importance: f64,
+) -> AppResult<()> {
+    sqlx::query("UPDATE memories SET importance = ?1 WHERE id = ?2")
+        .bind(importance)
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Update pinned flag on an existing memory.
+pub async fn update_memory_pinned(pool: &SqlitePool, id: i64, pinned: bool) -> AppResult<()> {
+    sqlx::query("UPDATE memories SET pinned = ?1 WHERE id = ?2")
+        .bind(if pinned { 1i64 } else { 0i64 })
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Delete a memory by id.
+pub async fn delete_memory_by_id(pool: &SqlitePool, id: i64) -> AppResult<()> {
+    sqlx::query("DELETE FROM memories WHERE id = ?1")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Touch last_used_at and increment use_count.
+pub async fn touch_memory(pool: &SqlitePool, id: i64) -> AppResult<()> {
+    let now = chrono::Utc::now().timestamp();
+    sqlx::query(
+        "UPDATE memories
+         SET last_used_at = ?1,
+             use_count    = COALESCE(use_count, 0) + 1
+         WHERE id = ?2",
+    )
+    .bind(now)
+    .bind(id)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Translations — new helpers
+// ---------------------------------------------------------------------------
+
+/// Return cached translated body_text for (message_id, target_lang), if any.
+pub async fn get_translation(
+    pool: &SqlitePool,
+    msg_id: i64,
+    lang: &str,
+) -> AppResult<Option<String>> {
+    let row: Option<(Option<String>,)> = sqlx::query_as(
+        "SELECT body_text FROM translations
+         WHERE message_id = ?1 AND target_lang = ?2",
+    )
+    .bind(msg_id)
+    .bind(lang)
+    .fetch_optional(pool)
+    .await?;
+    Ok(row.and_then(|(t,)| t))
+}
+
+/// Insert a new translation row (or ignore if already exists).
+pub async fn insert_translation(pool: &SqlitePool, t: &Translation) -> AppResult<()> {
+    let now = chrono::Utc::now().timestamp();
+    let created_at = if t.created_at == 0 { now } else { t.created_at };
+
+    sqlx::query(
+        "INSERT OR IGNORE INTO translations
+            (message_id, target_lang, body_text, body_html, model, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+    )
+    .bind(t.message_id)
+    .bind(&t.target_lang)
+    .bind(&t.body_text)
+    .bind(&t.body_html)
+    .bind(&t.model)
+    .bind(created_at)
+    .execute(pool)
+    .await?;
+    Ok(())
 }

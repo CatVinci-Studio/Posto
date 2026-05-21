@@ -14,13 +14,102 @@
     "add_account": "Add Account"
   },
   "inbox": {
-    "empty": "Inbox zero. Nothing to do.",
+    "empty_newsletters": "No newsletters to show.",
+    "empty_done": "Nothing done yet.",
+    "needs_response": "Needs reply",
+    "unknown_sender": "Unknown sender",
+    "refresh": "Refresh",
+    "search_placeholder": "Search…",
+    "filters": {
+      "all": "All",
+      "today": "Today",
+      "week": "This Week",
+      "newsletters": "Newsletters",
+      "done": "Done"
+    },
+    "sections": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "this_week": "This Week",
+      "older": "Older"
+    },
+    "empty": {
+      "title": "📬 Inbox zero. Nothing to do.",
+      "subtitle": "You're all caught up! Check back later."
+    },
     "actions": {
       "archive": "Archive",
       "reply": "Reply",
       "snooze": "Snooze",
       "convert_to_task": "Convert to Task",
       "open": "Open"
+    },
+    "detail": {
+      "summary": "AI Summary",
+      "suggested_tasks": "Suggested Tasks",
+      "original": "View Original",
+      "translated": "View Translated",
+      "toggle_translation": "Translate",
+      "to": "To",
+      "cc": "CC"
+    },
+    "categories": {
+      "urgent": "Urgent",
+      "work": "Work",
+      "personal": "Personal",
+      "newsletter": "Newsletter",
+      "transactional": "Transactional",
+      "social": "Social",
+      "spam": "Spam"
+    }
+  },
+  "compose": {
+    "new": "New message",
+    "reply_to": "Reply to",
+    "from": "From",
+    "to": "To",
+    "cc": "Cc",
+    "bcc": "Bcc",
+    "subject": "Subject",
+    "body_placeholder": "Write your message here…",
+    "send": "Send",
+    "save_draft": "Save as draft",
+    "discard": "Discard",
+    "discard_confirm": "Are you sure? This message and any unsaved changes will be lost.",
+    "ai_assist": "AI Assist",
+    "draft_saved": "Draft saved",
+    "sent": "Sent!",
+    "sending": "Sending…",
+    "ai": {
+      "generate_reply": "Generate reply draft",
+      "improve_writing": "Improve writing",
+      "translate_to": "Translate to…",
+      "tone": "Tone",
+      "tone_casual": "Casual",
+      "tone_neutral": "Neutral",
+      "tone_formal": "Formal",
+      "detected_lang": "Detected language",
+      "ai_not_configured": "Configure an LLM in Settings to enable AI assistance."
+    }
+  },
+  "activity": {
+    "title": "Agent Activity",
+    "pause": "Pause",
+    "resume": "Resume",
+    "empty": "No agent activity yet.",
+    "show_history": "Show all activity in history",
+    "actions": {
+      "undo": "Undo",
+      "undone": "Undone",
+      "cannot_undo": "Cannot undo"
+    },
+    "types": {
+      "triage": "Triage",
+      "summary": "Summary",
+      "action": "Action",
+      "rule": "Rule",
+      "draft": "Draft",
+      "reflection": "Reflection"
     }
   },
   "settings": {
@@ -30,7 +119,99 @@
     "language": "Language",
     "memory": "Memory",
     "automation": "Automation",
-    "about": "About"
+    "about": "About",
+    "tabs": {
+      "general": "General",
+      "accounts": "Accounts",
+      "llm": "LLM Provider",
+      "language": "Language",
+      "memory": "Memory",
+      "automation": "Automation",
+      "about": "About"
+    },
+    "general": {
+      "ui_lang": "UI Language",
+      "display_lang": "Display Language",
+      "theme": "Theme",
+      "theme_system": "System",
+      "theme_light": "Light",
+      "theme_dark": "Dark"
+    },
+    "accounts": {
+      "add": "Add Account",
+      "no_accounts": "No accounts connected yet. Add one to get started.",
+      "last_synced": "Last synced",
+      "actions": {
+        "sync_now": "Sync now",
+        "edit": "Edit",
+        "remove": "Remove"
+      },
+      "confirm_remove": "Are you sure you want to remove this account? This will stop syncing and delete local data."
+    },
+    "llm": {
+      "api_key": "API Key",
+      "api_key_placeholder": "sk-...",
+      "save": "Save",
+      "test_connection": "Test connection",
+      "test_in_progress": "Testing…",
+      "test_success": "Success",
+      "test_failure": "Failed",
+      "key_configured": "Key configured",
+      "no_key": "No key set",
+      "clear_key": "Clear key",
+      "confirm_clear": "Clear the API key?",
+      "model": "Model",
+      "privacy_note": "All LLM calls are made directly from your device. Your emails and prompts are sent only to the configured provider and are never stored by Retposto."
+    },
+    "language": {
+      "ui_lang_desc": "Language of the app interface — menus, buttons, and labels.",
+      "display_lang": "Display Language",
+      "display_lang_desc": "Email content is shown in this language. Original-language emails will be translated automatically.",
+      "display_lang_original": "Original (no translation)",
+      "reply_lang_desc": "When you reply, this language is used. 'Auto' means the AI matches the sender's language.",
+      "prompt_lang_desc": "All internal AI prompts are in English for reliability.",
+      "reply_lang": {
+        "auto": "Auto (match sender)"
+      }
+    },
+    "memory": {
+      "add": "Add memory",
+      "export": "Export to Markdown",
+      "filter_type": "Type",
+      "filter_scope": "Scope",
+      "search": "Search memories…",
+      "no_memories": "No memories found. The AI will learn from your email interactions over time.",
+      "confirm_delete": "Delete this memory permanently? The AI will no longer have access to it.",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "importance": "Importance"
+    },
+    "automation": {
+      "trust_level": {
+        "aggressive": "Aggressive",
+        "medium": "Medium",
+        "conservative": "Conservative"
+      },
+      "trust_level_desc": {
+        "aggressive": "The agent acts fully autonomously: classifies, labels, archives, moves, and drafts without asking. Only send and delete require confirmation.",
+        "medium": "The agent automates low-risk tasks (classify, mark read) and asks before moving messages or archiving newsletters. Recommended for most users.",
+        "conservative": "The agent asks before every action except classifying. Maximum control, minimum automation."
+      },
+      "actions": {
+        "classify": "Classify emails",
+        "label": "Apply labels",
+        "archive_newsletter": "Archive newsletters",
+        "move_folder": "Move to folder",
+        "mark_read": "Mark as read",
+        "generate_draft": "Generate draft replies",
+        "send": "Send email",
+        "delete_action": "Delete / trash email"
+      },
+      "always_confirm": "Always confirm",
+      "rules": "Learned Rules",
+      "add_rule": "Add rule",
+      "undo_keep": "Undo history size"
+    }
   },
   "onboarding": {
     "welcome": "Welcome to Retposto",

@@ -48,6 +48,8 @@ uuid = { version = "1", features = ["v4", "serde"] }
 # Auth / secrets
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 oauth2 = "5"
+url = "2"
+serde_urlencoded = "0.7"
 
 # Email
 async-imap = "0.10"

@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Inbox as InboxIcon,
@@ -8,8 +8,10 @@ import {
   Sparkles,
   Settings as SettingsIcon,
   Plus,
+  PenSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 
 interface NavItem {
   to: string;
@@ -26,13 +28,24 @@ const PRIMARY: NavItem[] = [
 
 export function Sidebar() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-muted/30 p-3">
       <div className="px-2 py-3 text-lg font-semibold tracking-tight">
         {t("app.name")}
       </div>
 
-      <nav className="mt-2 flex flex-col gap-1">
+      <Button
+        type="button"
+        size="md"
+        className="mt-1 gap-2"
+        onClick={() => navigate("/compose")}
+      >
+        <PenSquare className="h-4 w-4" />
+        {t("compose.new")}
+      </Button>
+
+      <nav className="mt-3 flex flex-col gap-1">
         {PRIMARY.map(({ to, labelKey, Icon }) => (
           <NavLink
             key={to}
@@ -59,7 +72,7 @@ export function Sidebar() {
         <button
           type="button"
           className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-          onClick={() => (window.location.href = "/onboarding")}
+          onClick={() => navigate("/onboarding")}
         >
           <Plus className="h-4 w-4" />
           {t("sidebar.add_account")}

@@ -3673,6 +3673,7 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "serde_urlencoded",
  "sqlx",
  "tauri",
  "tauri-build",
@@ -3683,6 +3684,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
  "whatlang",
 ]
