@@ -44,7 +44,7 @@ pub async fn begin_oauth_login(
 // handle_oauth_callback
 // ---------------------------------------------------------------------------
 
-/// Handle the deep-link callback URL `retposto://oauth/callback?code=…&state=…`.
+/// Handle the deep-link callback URL `posto://oauth/callback?code=…&state=…`.
 ///
 /// Called either directly by the deep-link handler in `lib.rs` OR by the
 /// frontend (whichever receives the URL first).

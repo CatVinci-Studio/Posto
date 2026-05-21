@@ -11,7 +11,7 @@ use super::flow::OAuthTokens;
 // Keyring helpers
 // ---------------------------------------------------------------------------
 
-const SERVICE: &str = "com.retposto.app";
+const SERVICE: &str = "com.catvinci.posto";
 
 fn keyring_account(provider: ProviderKind, email: &str) -> String {
     format!("oauth:{:?}:{}", provider, email).to_lowercase()

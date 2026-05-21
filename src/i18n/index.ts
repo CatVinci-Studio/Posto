@@ -3,7 +3,7 @@ import { initReactI18next } from "react-i18next";
 import en from "./locales/en.json";
 import zh from "./locales/zh.json";
 
-const STORAGE_KEY = "retposto.ui_lang";
+const STORAGE_KEY = "posto.ui_lang";
 
 const stored =
   typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;

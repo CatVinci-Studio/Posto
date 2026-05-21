@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Retposto"
+    "name": "Posto"
   },
   "common": {
     "close": "Close",
@@ -181,7 +181,7 @@
       "clear_key": "Clear key",
       "confirm_clear": "Clear the API key?",
       "model": "Model",
-      "privacy_note": "All LLM calls are made directly from your device. Your emails and prompts are sent only to the configured provider and are never stored by Retposto."
+      "privacy_note": "All LLM calls are made directly from your device. Your emails and prompts are sent only to the configured provider and are never stored by Posto."
     },
     "language": {
       "ui_lang_desc": "Language of the app interface — menus, buttons, and labels.",
@@ -235,7 +235,7 @@
     }
   },
   "onboarding": {
-    "welcome": "Welcome to Retposto",
+    "welcome": "Welcome to Posto",
     "add_first_account": "Let's add your first email account",
     "email_address": "Email address",
     "next": "Next",
@@ -274,7 +274,7 @@
       "icloud": [
         "Visit appleid.apple.com and sign in.",
         "Go to Sign-In and Security → App-Specific Passwords.",
-        "Click Generate an App-Specific Password and name it Retposto.",
+        "Click Generate an App-Specific Password and name it Posto.",
         "Copy the generated password and paste it below."
       ],
       "qq": [

@@ -1,6 +1,6 @@
 use crate::error::{AppError, AppResult};
 
-const SERVICE: &str = "com.retposto.app";
+const SERVICE: &str = "com.catvinci.posto";
 
 // ---------------------------------------------------------------------------
 // OpenAI API key

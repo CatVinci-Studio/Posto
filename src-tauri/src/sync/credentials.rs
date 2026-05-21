@@ -2,7 +2,7 @@ use keyring::Entry;
 
 use crate::error::{AppError, AppResult};
 
-const SERVICE: &str = "com.retposto.app";
+const SERVICE: &str = "com.catvinci.posto";
 
 fn imap_account_key(email: &str) -> String {
     format!("imap:{email}")

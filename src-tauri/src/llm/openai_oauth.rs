@@ -4,9 +4,9 @@
 // 2.0 client registration program for third-party apps to sign users in with
 // their ChatGPT account; Codex CLI uses an internal client ID against
 // auth.openai.com that is not authorized for redistribution. Wiring this up in
-// Retposto without an official partnership would violate the OpenAI ToS.
+// Posto without an official partnership would violate the OpenAI ToS.
 //
-// In its place, Retposto uses the API key path: users paste an OpenAI API key
+// In its place, Posto uses the API key path: users paste an OpenAI API key
 // in Settings → LLM Provider, which is encrypted into the OS keychain via
 // `llm::secrets`. That path is feature-complete and covers all calls
 // (chat / streaming / embeddings).

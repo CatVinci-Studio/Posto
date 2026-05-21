@@ -3309,6 +3309,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "posto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-imap",
+ "async-native-tls",
+ "async-trait",
+ "chrono",
+ "futures",
+ "keyring",
+ "lettre",
+ "mail-builder",
+ "mail-parser",
+ "oauth2",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "sqlx",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-deep-link",
+ "tauri-plugin-opener",
+ "thiserror 2.0.18",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "whatlang",
+]
+
+[[package]]
 name = "potential_utf"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3717,40 +3751,6 @@ dependencies = [
  "wasm-bindgen-futures",
  "wasm-streams 0.5.0",
  "web-sys",
-]
-
-[[package]]
-name = "retposto"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-imap",
- "async-native-tls",
- "async-trait",
- "chrono",
- "futures",
- "keyring",
- "lettre",
- "mail-builder",
- "mail-parser",
- "oauth2",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sqlx",
- "tauri",
- "tauri-build",
- "tauri-plugin-deep-link",
- "tauri-plugin-opener",
- "thiserror 2.0.18",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
- "whatlang",
 ]
 
 [[package]]

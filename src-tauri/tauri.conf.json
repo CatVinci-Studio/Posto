@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Retposto",
+  "productName": "Posto",
   "version": "0.1.0",
-  "identifier": "com.retposto.app",
+  "identifier": "com.catvinci.posto",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Retposto",
+        "title": "Posto",
         "width": 1280,
         "height": 800,
         "minWidth": 380,
@@ -31,7 +31,7 @@
     "targets": "all",
     "category": "Productivity",
     "shortDescription": "Agent-based email manager",
-    "longDescription": "Retposto turns your inbox into a task list, powered by Agents.",
+    "longDescription": "Posto turns your inbox into a task list, powered by Agents.",
     "iOS": {
       "minimumSystemVersion": "14.0"
     },
@@ -42,11 +42,11 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["retposto"]
+        "schemes": ["posto"]
       },
       "mobile": [
         {
-          "host": "oauth.retposto.app",
+          "host": "oauth.posto.app",
           "pathPrefix": ["/callback"]
         }
       ]

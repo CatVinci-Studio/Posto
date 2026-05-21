@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Retposto"
+    "name": "Posto"
   },
   "common": {
     "close": "关闭",
@@ -181,7 +181,7 @@
       "clear_key": "清除密钥",
       "confirm_clear": "确定清除 API 密钥吗？",
       "model": "模型",
-      "privacy_note": "所有 LLM 调用均直接从您的设备发出。您的邮件和提示词仅发送至您配置的服务商，Retposto 不会存储任何内容。"
+      "privacy_note": "所有 LLM 调用均直接从您的设备发出。您的邮件和提示词仅发送至您配置的服务商，Posto 不会存储任何内容。"
     },
     "language": {
       "ui_lang_desc": "应用界面的语言，包括菜单、按钮和标签。",
@@ -235,7 +235,7 @@
     }
   },
   "onboarding": {
-    "welcome": "欢迎使用 Retposto",
+    "welcome": "欢迎使用 Posto",
     "add_first_account": "添加你的第一个邮箱账户",
     "email_address": "邮箱地址",
     "next": "下一步",
@@ -274,7 +274,7 @@
       "icloud": [
         "访问 appleid.apple.com 并登录。",
         "进入「登录与安全」→「App 专用密码」。",
-        "点击「生成 App 专用密码」，名称填写「Retposto」。",
+        "点击「生成 App 专用密码」，名称填写「Posto」。",
         "复制生成的密码并粘贴至下方。"
       ],
       "qq": [

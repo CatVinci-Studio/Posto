@@ -14,7 +14,7 @@ pub async fn init(app_handle: &tauri::AppHandle) -> AppResult<sqlx::SqlitePool> 
 
     tokio::fs::create_dir_all(&data_dir).await?;
 
-    let db_path = data_dir.join("retposto.db");
+    let db_path = data_dir.join("posto.db");
 
     let opts = SqliteConnectOptions::new()
         .filename(&db_path)

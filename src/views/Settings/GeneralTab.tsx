@@ -101,7 +101,7 @@ export function GeneralTab() {
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Source</span>
             <a
-              href="https://github.com/retposto/retposto"
+              href="https://github.com/CatVinci-Studio/Posto"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1 text-primary hover:underline"

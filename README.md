@@ -1,4 +1,4 @@
-# Retposto
+# Posto
 
 Agent-based email manager — turns your inbox into a task list, powered by AI.
 
@@ -45,8 +45,8 @@ For Gmail / Outlook sign-in to work, register OAuth Desktop apps and provide the
 GOOGLE_OAUTH_CLIENT_ID=... MICROSOFT_OAUTH_CLIENT_ID=... bun run tauri build
 ```
 
-- Google Cloud Console → APIs & Services → OAuth client → Desktop application; add `retposto://oauth/callback` as redirect.
-- Microsoft Entra (Azure AD) → App registrations → Public client; add `retposto://oauth/callback` as redirect.
+- Google Cloud Console → APIs & Services → OAuth client → Desktop application; add `posto://oauth/callback` as redirect.
+- Microsoft Entra (Azure AD) → App registrations → Public client; add `posto://oauth/callback` as redirect.
 
 ## Mobile (iOS / Android)
 

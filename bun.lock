@@ -3,7 +3,7 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "retposto",
+      "name": "posto",
       "dependencies": {
         "@tanstack/react-query": "^5.59.16",
         "@tauri-apps/api": "^2.1.1",

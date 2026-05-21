@@ -1,4 +1,4 @@
--- Retposto initial schema
+-- Posto initial schema
 -- sqlx wraps migrations in a transaction automatically; no BEGIN/COMMIT needed.
 
 CREATE TABLE IF NOT EXISTS accounts (

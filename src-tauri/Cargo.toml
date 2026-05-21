@@ -1,12 +1,12 @@
 [package]
-name = "retposto"
+name = "posto"
 version = "0.1.0"
 description = "Agent-based email manager"
 edition = "2021"
 rust-version = "1.77"
 
 [lib]
-name = "retposto_lib"
+name = "posto_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

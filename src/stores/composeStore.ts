@@ -31,7 +31,7 @@ export const useComposeStore = create<ComposeState>()(
         }),
     }),
     {
-      name: "retposto.compose.drafts",
+      name: "posto.compose.drafts",
     }
   )
 );

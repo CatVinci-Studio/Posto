@@ -121,7 +121,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
     }),
     {
-      name: "retposto.settings",
+      name: "posto.settings",
       // Persist all settings fields except hydrated
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars

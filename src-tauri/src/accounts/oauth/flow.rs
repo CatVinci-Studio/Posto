@@ -41,7 +41,7 @@ pub struct AuthInitiation {
 // Redirect URI used for all providers
 // ---------------------------------------------------------------------------
 
-const REDIRECT_URI: &str = "retposto://oauth/callback";
+const REDIRECT_URI: &str = "posto://oauth/callback";
 
 // ---------------------------------------------------------------------------
 // Client-ID resolution

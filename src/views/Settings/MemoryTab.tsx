@@ -278,7 +278,7 @@ export function MemoryTab() {
   }
 
   function handleExport() {
-    const lines: string[] = ["# Retposto Long-Term Memory Export", ""];
+    const lines: string[] = ["# Posto Long-Term Memory Export", ""];
     const byType = ALL_TYPES.reduce((acc, t) => {
       acc[t] = memories.filter((m) => m.type === t);
       return acc;
@@ -298,7 +298,7 @@ export function MemoryTab() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "retposto-memory.md";
+    a.download = "posto-memory.md";
     a.click();
     URL.revokeObjectURL(url);
   }

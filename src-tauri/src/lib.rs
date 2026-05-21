@@ -22,7 +22,7 @@ pub fn run() {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| EnvFilter::new("info,retposto_lib=debug")),
+                .unwrap_or_else(|_| EnvFilter::new("info,posto_lib=debug")),
         )
         .init();
 
@@ -62,7 +62,7 @@ pub fn run() {
             app.deep_link().on_open_url(move |event| {
                 for url in event.urls() {
                     let url_str = url.to_string();
-                    if url_str.starts_with("retposto://oauth/callback") {
+                    if url_str.starts_with("posto://oauth/callback") {
                         let handle = app_handle.clone();
                         tauri::async_runtime::spawn(async move {
                             let flow = handle.state::<Arc<accounts::oauth::OAuthFlow>>();
