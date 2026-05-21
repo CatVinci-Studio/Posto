@@ -1,0 +1,42 @@
+{
+  "app": {
+    "name": "Retposto"
+  },
+  "sidebar": {
+    "all_inboxes": "全部收件箱",
+    "today": "今天",
+    "this_week": "本周",
+    "newsletters": "订阅",
+    "done": "已完成",
+    "accounts": "账户",
+    "agent_activity": "Agent 活动",
+    "settings": "设置",
+    "add_account": "添加账户"
+  },
+  "inbox": {
+    "empty": "收件箱已清空。",
+    "actions": {
+      "archive": "归档",
+      "reply": "回复",
+      "snooze": "稍后提醒",
+      "convert_to_task": "转为任务",
+      "open": "打开"
+    }
+  },
+  "settings": {
+    "general": "通用",
+    "accounts": "账户",
+    "llm": "AI 模型",
+    "language": "语言",
+    "memory": "长期记忆",
+    "automation": "自动化",
+    "about": "关于"
+  },
+  "onboarding": {
+    "welcome": "欢迎使用 Retposto",
+    "add_first_account": "添加你的第一个邮箱账户",
+    "email_address": "邮箱地址",
+    "next": "下一步",
+    "back": "返回"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Retposto",
+  "version": "0.1.0",
+  "identifier": "com.retposto.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Retposto",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Productivity",
+    "shortDescription": "Agent-based email manager",
+    "longDescription": "Retposto turns your inbox into a task list, powered by Agents."
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["retposto"]
+      }
+    }
+  }
+}

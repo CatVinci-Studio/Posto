@@ -1,0 +1,42 @@
+{
+  "app": {
+    "name": "Retposto"
+  },
+  "sidebar": {
+    "all_inboxes": "All Inboxes",
+    "today": "Today",
+    "this_week": "This Week",
+    "newsletters": "Newsletters",
+    "done": "Done",
+    "accounts": "Accounts",
+    "agent_activity": "Agent Activity",
+    "settings": "Settings",
+    "add_account": "Add Account"
+  },
+  "inbox": {
+    "empty": "Inbox zero. Nothing to do.",
+    "actions": {
+      "archive": "Archive",
+      "reply": "Reply",
+      "snooze": "Snooze",
+      "convert_to_task": "Convert to Task",
+      "open": "Open"
+    }
+  },
+  "settings": {
+    "general": "General",
+    "accounts": "Accounts",
+    "llm": "LLM Provider",
+    "language": "Language",
+    "memory": "Memory",
+    "automation": "Automation",
+    "about": "About"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Retposto",
+    "add_first_account": "Let's add your first email account",
+    "email_address": "Email address",
+    "next": "Next",
+    "back": "Back"
+  }
+}
