@@ -4,7 +4,6 @@ import { LogIn, Eye, EyeOff, CheckCircle2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/Card";
-import { cn } from "@/lib/utils";
 import type { ProviderKind } from "./detect";
 import type { FormState } from "./index";
 

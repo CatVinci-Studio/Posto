@@ -1,4 +1,3 @@
-use std::net::TcpStream as StdTcpStream;
 use std::time::Duration;
 
 use async_imap::Client;
@@ -6,6 +5,7 @@ use async_native_tls::TlsConnector;
 use futures::TryStreamExt;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
+use tokio_util::compat::{Compat, TokioAsyncReadCompatExt};
 use tracing::{debug, warn};
 
 use crate::accounts::provider::{Encryption, FolderInfo, ImapConfig, ParsedEmail};
@@ -22,24 +22,26 @@ pub struct ImapCredentials {
 // Internal helper: open an authenticated IMAP session
 // ---------------------------------------------------------------------------
 
-/// Wraps a connected + logged-in `async_imap::Session` over either TLS or
-/// plain TCP. We return a boxed erased type so callers don't need to be
-/// generic over the stream kind.
-///
-/// StartTLS is declared but currently stubs with an error — see TODO below.
+/// `async-imap 0.10` is built on `futures::io` traits, while Tokio's
+/// `TcpStream` exposes `tokio::io`. We bridge with `tokio_util::compat::Compat`.
+type ImapStream = async_native_tls::TlsStream<Compat<TcpStream>>;
+
 async fn open_session(
     imap: &ImapConfig,
     creds: &ImapCredentials,
-) -> AppResult<async_imap::Session<async_native_tls::TlsStream<TcpStream>>> {
+) -> AppResult<async_imap::Session<ImapStream>> {
     let addr = format!("{}:{}", imap.host, imap.port);
     debug!("IMAP connecting to {addr} (encryption={:?})", imap.encryption);
 
     match imap.encryption {
         Encryption::Tls => {
-            let stream = timeout(CONNECT_TIMEOUT, TcpStream::connect(&addr))
+            let tcp = timeout(CONNECT_TIMEOUT, TcpStream::connect(&addr))
                 .await
                 .map_err(|_| AppError::Provider(format!("timed out connecting to {addr}")))?
                 .map_err(|e| AppError::Provider(format!("TCP connect failed: {e}")))?;
+
+            // Tokio AsyncRead/Write -> futures-io AsyncRead/Write.
+            let stream = tcp.compat();
 
             let tls = TlsConnector::new();
             let tls_stream = timeout(
