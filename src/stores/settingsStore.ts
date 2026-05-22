@@ -124,7 +124,7 @@ export const useSettingsStore = create<SettingsState>()(
       name: "posto.settings",
       // Persist all settings fields except hydrated
       partialize: (state) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const { hydrated, hydrateFromBackend, setUiLang, setDisplayLang, setReplyLang, setTrustLevel, setTheme, setLlmModel, setPerAction, updateSettings, ...rest } = state;
         return rest;
       },

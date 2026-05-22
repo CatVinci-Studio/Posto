@@ -24,7 +24,7 @@ const RAW_OPTIONS = {
   FORBID_TAGS: ["script", "style", "iframe", "object", "embed", "link", "meta", "form"],
   FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
   ALLOWED_URI_REGEXP:
-    /^(?:(?:https?|mailto|tel|cid|ftp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    /^(?:(?:https?|mailto|tel|cid|ftp):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i,
   RETURN_TRUSTED_TYPE: false,
 };
 
