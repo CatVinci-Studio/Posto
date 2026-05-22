@@ -32,6 +32,15 @@
     "category": "Productivity",
     "shortDescription": "Agent-based email manager",
     "longDescription": "Posto turns your inbox into a task list, powered by Agents.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "CatVinci-Studio",
+    "copyright": "Copyright © 2026 CatVinci-Studio",
     "iOS": {
       "minimumSystemVersion": "14.0"
     },
