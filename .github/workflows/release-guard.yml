@@ -1,0 +1,40 @@
+name: Release Guard
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-version-bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # Both versions must be bumped and stay in sync — tauri-action stamps
+      # tauri.conf.json's version into the bundled artifact filenames.
+      - name: Check version bump
+        run: |
+          read_version() {
+            node -e "console.log(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version)" < "$1"
+          }
+
+          base_pkg=$(git show origin/main:package.json | node -e "console.log(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version)")
+          base_tauri=$(git show origin/main:src-tauri/tauri.conf.json | node -e "console.log(JSON.parse(require('fs').readFileSync('/dev/stdin','utf8')).version)")
+          pr_pkg=$(read_version package.json)
+          pr_tauri=$(read_version src-tauri/tauri.conf.json)
+
+          echo "package.json     : $base_pkg → $pr_pkg"
+          echo "tauri.conf.json  : $base_tauri → $pr_tauri"
+
+          if [ "$base_pkg" = "$pr_pkg" ]; then
+            echo "❌ Bump package.json version before merging to main."
+            exit 1
+          fi
+          if [ "$pr_pkg" != "$pr_tauri" ]; then
+            echo "❌ package.json ($pr_pkg) and src-tauri/tauri.conf.json ($pr_tauri) versions must match."
+            exit 1
+          fi
+
+          echo "✅ Version bump: $base_pkg → $pr_pkg (in sync with tauri.conf.json)"
