@@ -1,0 +1,74 @@
+area:frontend:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/**"
+
+area:rust:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src-tauri/src/**"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
+
+area:agent:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src-tauri/src/agents/**"
+      - "src-tauri/src/llm/**"
+      - "src-tauri/src/memory/**"
+
+area:sync:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src-tauri/src/sync/**"
+      - "src-tauri/src/accounts/**"
+
+area:storage:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src-tauri/src/storage/**"
+
+area:ipc:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src-tauri/src/**/commands.rs"
+      - "src/lib/tauri.ts"
+
+area:ui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/components/**"
+      - "src/views/**"
+      - "src/index.css"
+      - "tailwind.config.js"
+
+area:store:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/stores/**"
+
+area:i18n:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/i18n/**"
+
+area:tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/**/__tests__/**"
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+      - "**/*.spec.ts"
+
+area:ci:
+  - changed-files:
+    - any-glob-to-any-file:
+      - ".github/**"
+
+area:deps:
+  - changed-files:
+    - any-glob-to-any-file:
+      - "package.json"
+      - "bun.lock"
+      - "src-tauri/Cargo.toml"
+      - "src-tauri/Cargo.lock"
