@@ -53,7 +53,7 @@ serde_urlencoded = "0.7"
 
 # Email
 async-imap = "0.10"
-async-native-tls = "0.5"
+async-native-tls = "0.6"
 lettre = { version = "0.11", default-features = false, features = [
     "smtp-transport",
     "tokio1-rustls-tls",
