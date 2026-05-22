@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Agent-based email manager.</strong><br>
-  Turns your inbox into a task list. Multi-account, multilingual, agent-first.
+  Every account in one inbox. Every message read, classified, and ready to act on.
 </p>
 
 <p align="center">
@@ -24,15 +24,13 @@
 
 ## What it is
 
-A cross-platform desktop email client (Tauri 2 + Rust + React) where every account — Gmail, Outlook, iCloud, QQ, 163, or any IMAP — lands in one inbox. An LLM-driven agent reads each message, classifies it, summarizes it, extracts todos, drafts replies, and remembers what matters about your contacts and projects.
+A cross-platform desktop email client where every account — Gmail, Outlook, iCloud, QQ, 163, or any IMAP — lands in one inbox. An AI agent reads each message as it arrives, classifies it, summarizes it, extracts the todos, and drafts replies for you to approve.
 
 ## Why
 
-- **One inbox for everything.** Gmail · Outlook · iCloud · QQ · 163 · plus generic IMAP for the rest. OAuth where supported, app passwords elsewhere.
-- **Agent does the heavy lifting.** Auto-classify, summarize, extract todos, draft replies. Long-term memory learns your contacts, ongoing projects, automation rules.
-- **Four-layer language model.** UI / display / reply / prompt languages are all independent — read 中文 chrome with English replies for a foreign correspondent, or vice versa.
-- **Offline-first.** Full content cached locally; agents run and queue actions offline; resync when you're back online.
-- **Trust-first automation.** Three trust levels (manual / suggest / auto); send and delete always require confirmation; every agent action is undoable.
+- **One inbox for everything.** Gmail · Outlook · iCloud · QQ · 163 · plus generic IMAP. OAuth where supported.
+- **Agent does the triage.** Auto-classify, summarize, extract todos, draft replies. Learns your contacts and projects over time.
+- **Four-layer language model.** UI · display · reply · prompt languages all independent — read 中文 chrome and reply in English to foreign correspondents.
 - **Local-only secrets.** OAuth refresh tokens and API keys live in the system keychain, never in plaintext.
 
 ## Install
@@ -40,7 +38,6 @@ A cross-platform desktop email client (Tauri 2 + Rust + React) where every accou
 | Platform | Installer |
 |---|---|
 | macOS (Apple Silicon) | `Posto_X.Y.Z_aarch64.dmg` |
-| macOS (Intel) | `Posto_X.Y.Z_x64.dmg` |
 | Windows | `Posto_X.Y.Z_x64-setup.exe` (NSIS) · `_x64_en-US.msi` (WiX) |
 | Linux | `Posto_X.Y.Z_amd64.AppImage` · `_amd64.deb` · `Posto-X.Y.Z-1.x86_64.rpm` |
 
@@ -48,46 +45,21 @@ A cross-platform desktop email client (Tauri 2 + Rust + React) where every accou
 
 ## Quick start
 
-1. Launch Posto → **Add account**, sign in to Gmail / Outlook / iCloud (OAuth) or paste IMAP credentials.
+1. Launch Posto → **Add account**, sign in to Gmail / Outlook / iCloud (OAuth) or paste IMAP credentials for the rest.
 2. Open **Settings → LLM Provider**, paste an OpenAI API key, click **Test connection**.
 3. Open the inbox. The agent runs Triage / Summary / Action / Reflection on new messages as they sync.
 
-## What the agent can do
+## What the agent does
 
-- **Triage** — labels each message by importance and intent (newsletter / personal / task / receipt …).
-- **Summary** — one-line + 3-bullet summary per thread; multilingual.
-- **Action** — extracts todos, dates, attachments-of-interest; offers to create tasks.
-- **Reply drafts** — produces a draft in your preferred reply language; never sends without confirmation.
-- **Reflection** — periodically distills patterns into long-term memory ("Mom prefers WeChat for urgent matters"; "QQ ads = always archive").
+For every incoming message:
 
-The agent pipeline lives entirely in Rust (`src-tauri/src/agents/`). The React frontend only displays results — no LLM keys touch the renderer.
+- **Triage** — labels by importance and intent (newsletter / personal / task / receipt …)
+- **Summary** — one-line + 3-bullet summary, in your display language
+- **Action** — extracts todos, dates, attachments-of-interest; offers to create tasks
+- **Reply drafts** — in your reply language; never sends without confirmation
+- **Reflection** — periodically distills patterns into long-term memory ("Mom prefers WeChat for urgent matters", "QQ ads = always archive")
 
-## Architecture
-
-```
-React UI  ──IPC──▶  Rust Core
-                     ├─ Accounts (provider catalog, OAuth + IMAP)
-                     ├─ Sync engine (polling; IDLE planned)
-                     ├─ Storage (sqlx + SQLite + FTS5)
-                     ├─ Messages (inbox query + mark/flag/archive/delete)
-                     ├─ LLM (OpenAI; abstracted via LlmProvider trait)
-                     ├─ Agents (Triage / Summary / Action / Reflection)
-                     ├─ Memory (5 types, semantic retrieval)
-                     └─ Translation (cached per-message)
-```
-
-## OAuth client IDs
-
-Gmail / Outlook sign-in requires Desktop OAuth client IDs supplied at build time:
-
-```bash
-GOOGLE_OAUTH_CLIENT_ID=... MICROSOFT_OAUTH_CLIENT_ID=... bun run tauri build
-```
-
-Redirect URI for both providers: `posto://oauth/callback`.
-
-- Google Cloud Console → APIs & Services → OAuth client → Desktop application.
-- Microsoft Entra (Azure AD) → App registrations → Public client.
+Three trust levels (manual / suggest / auto). Send and delete always require confirmation. Every agent action is undoable.
 
 ## Build from source
 
@@ -103,19 +75,13 @@ bun run typecheck     # tsc --noEmit
 bun run lint          # eslint over src/
 ```
 
-Requires [Bun](https://bun.sh), [Rust](https://rustup.rs) (1.77+), and platform build tools (Xcode CLT on macOS; build-essential + WebKitGTK on Linux; MSVC on Windows). Codebase layout: [CLAUDE.md](./CLAUDE.md).
-
-## Mobile (iOS / Android)
-
-`tauri.conf.json` declares iOS / Android bundle keys; `capabilities/mobile.json` is in place; the UI is responsive (sidebar drawer + iOS-style swipe-to-archive in `InboxList`). To initialize mobile platforms (one-time):
+Requires [Bun](https://bun.sh), [Rust](https://rustup.rs) (1.77+), and platform build tools (Xcode CLT on macOS; build-essential + WebKitGTK on Linux; MSVC on Windows). Gmail / Outlook sign-in needs Desktop OAuth client IDs supplied at build time:
 
 ```bash
-bun run tauri ios init
-bun run tauri android init
-bun run tauri ios dev       # or:  bun run tauri android dev
+GOOGLE_OAUTH_CLIENT_ID=... MICROSOFT_OAUTH_CLIENT_ID=... bun run tauri build
 ```
 
-Android caveat: `keyring` 3.x has no Android backend; OAuth refresh tokens need to migrate to `tauri-plugin-stronghold` before shipping Android builds.
+Redirect URI for both: `posto://oauth/callback`. Codebase layout: [CLAUDE.md](./CLAUDE.md).
 
 ## License
 
